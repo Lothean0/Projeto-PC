@@ -7,76 +7,92 @@ start(Port) ->
   {ok, LSock} = gen_tcp:listen(Port, [{packet, line}, {reuseaddr, true}, {exit_on_close, false},{ip, any}]),
   io:format("Server started on port ~p~n", [Port]),
   loginManager:start(),
-  spawn(fun() -> tick_loop() end),
-  acceptor(LSock).
+  matchmaker:start(),
+  %spawn(fun() -> tick_loop() end),
+  spawn(fun() -> acceptor(LSock) end).
 
 
 stop(Server) ->
   Server ! stop.
 
 acceptor(LSock) ->
-  case gen_tcp:accept(LSock) of
-    {ok, Sock} ->
-      io:format("Client connected: ~p~n", [Sock]),
-      spawn(fun() -> acceptor(LSock)  end),
-      handle_client(Sock);
-    {error, closed} ->
-      io:format("Listening socket closed~n")
-  end.
+  {ok,Sock} = gen_tcp:accept(LSock),
+  spawn(fun() -> acceptor(LSock) end),
+  user_logged_out(Sock).
 
-handle_client(Sock) ->
+user_logged_out(Sock) ->
   receive
-    {tcp, Sock, Data} ->
-      io:format("Received data: ~p~n", [Data]),
-      case parse_request(Data) of
-        {ok, Request} ->
-          gen_tcp:send(Sock, process_request(Request,Sock)),
-          handle_client(Sock);
-        {error, Reason} ->
-          gen_tcp:send(Sock, io_lib:format("Error processing request: ~p~n\n",[Reason])),
-          handle_client(Sock)
+    {tcp, _ , Data} ->
+      case string:tokens(Data, " ") of
+        ["/cr", User, Pass] ->
+          %% Create account
+          loginManager:create_account(User, Pass),
+          gen_tcp:send(Sock, "Account created successfully\n"),
+          user_logged_out(Sock);
+        ["/cl", User, Pass] ->
+          %% Close account
+          case loginManager:close_account(User, Pass) of
+            ok ->
+              gen_tcp:send(Sock, "Account closed successfully\n"),
+              user_logged_out(Sock);
+            _ ->
+              gen_tcp:send(Sock, "Account closure failed\n"),
+              user_logged_out(Sock)
+          end;
+        ["/l", User, Pass] ->
+          %% Login
+          case loginManager:login(User, Pass, Sock) of
+            ok ->
+              gen_tcp:send(Sock, "Login successful\n"),
+              user_logged_in(Sock, User);
+            _ ->
+              gen_tcp:send(Sock, "Login failed\n"),
+              user_logged_out(Sock)
+          end;
+        _ ->
+          %% Invalid command
+          gen_tcp:send(Sock, "Invalid command\n"),
+          user_logged_out(Sock)
       end
   end.
 
-
-parse_request(Data) ->
-  case string:tokens(string:trim(Data), " ") of
-    [Action | Args] ->
-      case Action of
-        "create_account" -> {ok, {create_account, Args}};
-        "close_account" -> {ok, {close_account, Args}};
-        "login" -> {ok, {login, Args}};
-        "logout" -> {ok, {logout, Args}};
-        _ -> {error, invalid_action}
+user_logged_in(Sock, User) ->
+  receive
+    {tcp, Sock, Data} ->
+      CleanData = string:trim(Data), %% Trim the input
+      case string:tokens(CleanData, " ") of
+        ["/f"] ->
+          %% Send a message to the matchmaker process
+          matchmaker ! {self(), {find_match, User, loginManager:check_lv(User)}},
+          gen_tcp:send(Sock, "Finding a match...\n"),
+          user_logged_in(Sock, User);
+        _ ->
+          gen_tcp:send(Sock, "Invalid command\n"),
+          user_logged_in(Sock, User)
       end;
-    _ -> {error, invalid_request}
+    waiting ->
+      gen_tcp:send(Sock, "Searching for a match...\n"),
+      user_logged_in(Sock, User);
+    {match_found, Rid} ->
+      gen_tcp:send(Sock, "Match found! Room ID: " ++ integer_to_list(Rid) ++ "\n"),
+      match(Rid, Sock, User)
   end.
 
-process_request(Request,Sock) ->
-  case Request of
-    {create_account, [User, Pass]} ->
-      loginManager:create_account(User, Pass),
-      gen_tcp:send(Sock, io_lib:format("Account created successfully for user: ~p~n", [User]));
-    {close_account, [User, Pass]} ->
-      loginManager:close_account(User, Pass),
-      gen_tcp:send(Sock, io_lib:format("Account closed successfully for user: ~p~n", [User]));
-    {login, [User, Pass]} ->
-      loginManager:login(User, Pass, Sock),
-      gen_tcp:send(Sock, io_lib:format("Login successful for user: ~p~n", [User]));
-    {logout, [User]} ->
-      loginManager:logout(User),
-      gen_tcp:send(Sock, io_lib:format("Logout successful for user: ~p~n", [User]));
-    _ ->
-      gen_tcp:send(Sock, io_lib:format("Invalid request: ~p~n", [Request]))
+match(Rid,Sock,User) ->
+    receive
+      {tcp, Sock, Data} ->
+        matchmaker ! {self(),{decide, Rid, string:trim(Data)}},
+        match(Rid, Sock, User);
+      win ->
+        io:format("Player ~p wins!~n", [User]),
+        gen_tcp:send(Sock, "You win!\n"),
+        loginManager:win(User),
+        user_logged_in(Sock, User);
+     lose ->
+        io:format("Player ~p loses!~n", [User]),
+        gen_tcp:send(Sock, "You lose!\n"),
+        loginManager:lose(User),
+        user_logged_in(Sock, User)
   end.
 
-tick_loop() ->
-  %% Retrieve the list of logged-in users and their sockets
-  Logged_In = loginManager:online(),
-  %% Send a message to all connected clients
-  maps:map(fun(_User, Socket) ->
-    gen_tcp:send(Socket, "Server tick: Keep-alive message\n")
-           end, Logged_In),
-  %% Wait for a second before the next tick
-  timer:sleep(1000),
-  tick_loop().
+
