@@ -66,6 +66,25 @@ user_logged_in(Sock, User) ->
           matchmaker ! {self(), {find_match, User, loginManager:check_lv(User)}},
           gen_tcp:send(Sock, "Finding a match...\n"),
           user_logged_in(Sock, User);
+        ["/Lv"] ->
+          %% Check level
+          case loginManager:check_lv(User) of
+            user_not_found ->
+              gen_tcp:send(Sock, "Failed to check level\n"),
+              user_logged_in(Sock, User);
+            Lv ->
+              gen_tcp:send(Sock, "Your level is: " ++ integer_to_list(Lv) ++ "\n"),
+              user_logged_in(Sock, User)
+          end;
+        ["/q"] ->
+          case loginManager:logout(User) of
+            ok ->
+              gen_tcp:send(Sock, "Logged out successfully\n"),
+              user_logged_out(Sock);
+            _ ->
+              gen_tcp:send(Sock, "Logout failed\n"),
+              user_logged_in(Sock, User)
+          end;
         _ ->
           gen_tcp:send(Sock, "Invalid command\n"),
           user_logged_in(Sock, User)
