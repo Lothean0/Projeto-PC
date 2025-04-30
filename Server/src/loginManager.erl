@@ -54,7 +54,7 @@ loop(Map, Logged_In) ->
 
     {Pid, {login, U, P, Socket}} ->
       case maps:find(U, Map) of
-        {ok, {Pass, _Lv , _Streak}} when Pass == P ->
+        {ok, {Pass, _Lv, _Streak}} when Pass == P ->
           case maps:is_key(U, Logged_In) of
             true ->
               Pid ! already_logged_in,
@@ -110,35 +110,35 @@ loop(Map, Logged_In) ->
           loop(Map, Logged_In)
       end;
 
-  {Pid, {lose, U}} ->
-    case maps:find(U, Map) of
-      {ok, {Pass, Lv, Streak}} ->
-        NewMap = if
-                   Streak >= 0 ->
-                     if
-                       Lv == 1 ->
-                         maps:put(U, {Pass, Lv, 0}, Map);
-                       Lv / 2 =< 1 ->
-                         NewStreak = 0,
-                         maps:put(U, {Pass, Lv - 1, NewStreak}, Map);
-                       true ->
-                         maps:put(U, {Pass, Lv, Streak - 1}, Map)
-                     end;
-                   true ->
-                     if
-                       Lv / 2 =< -(Streak - 1) ->
-                         maps:put(U, {Pass, Lv - 1, 0}, Map);
-                       true ->
-                         NewStreak = Streak - 1,
-                         maps:put(U, {Pass, Lv, NewStreak}, Map)
-                     end
-                 end,
-        Pid ! ok,
-        loop(NewMap, Logged_In);
-      error ->
-        Pid ! user_not_found,
-        loop(Map, Logged_In)
-    end;
+    {Pid, {lose, U}} ->
+      case maps:find(U, Map) of
+        {ok, {Pass, Lv, Streak}} ->
+          NewMap = if
+                     Streak >= 0 ->
+                       if
+                         Lv == 1 ->
+                           maps:put(U, {Pass, Lv, 0}, Map);
+                         Lv / 2 =< 1 ->
+                           NewStreak = 0,
+                           maps:put(U, {Pass, Lv - 1, NewStreak}, Map);
+                         true ->
+                           maps:put(U, {Pass, Lv, Streak - 1}, Map)
+                       end;
+                     true ->
+                       if
+                         Lv / 2 =< -(Streak - 1) ->
+                           maps:put(U, {Pass, Lv - 1, 0}, Map);
+                         true ->
+                           NewStreak = Streak - 1,
+                           maps:put(U, {Pass, Lv, NewStreak}, Map)
+                       end
+                   end,
+          Pid ! ok,
+          loop(NewMap, Logged_In);
+        error ->
+          Pid ! user_not_found,
+          loop(Map, Logged_In)
+      end;
 
     {Pid, online} ->
       Pid ! Logged_In,
