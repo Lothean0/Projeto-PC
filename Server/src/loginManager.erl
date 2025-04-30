@@ -114,7 +114,7 @@ loop(Map, Logged_In) ->
     case maps:find(U, Map) of
       {ok, {Pass, Lv, Streak}} ->
         NewMap = if
-                   Streak > 0 ->
+                   Streak >= 0 ->
                      if
                        Lv == 1 ->
                          maps:put(U, {Pass, Lv, 0}, Map);
