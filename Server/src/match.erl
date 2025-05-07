@@ -5,33 +5,19 @@
 
 start(Room) ->
   io:format("Test2.~n"),
-  {Rid, Players} = Room,
-  Pid = spawn(fun() -> connector(Rid, Players, []) end),
+  {_Rid, Players} = Room,
+  Pid = spawn(fun() -> connector(Players) end),
   Pid.
 
-connector(Rid, Players, Connected) ->
+connector(Players) ->
   receive
-    {connect, User, Pid} ->
-      [{User1, _Lv1, SPid1, {_P1, _V1, _A1, _Ps1, _Pi1, _Pt1}},
-        {User2, _Lv2, SPid2, {_P2, _V2, _A2, _Ps2, _Pi2, _Pt2}}] = Players,
-      io:format("Test3.~n"),
-      if
-        User == User1 orelse User == User2 ->
-          %% Send the current state to the connected user
-          SPid = if User == User1 -> SPid1; true -> SPid2 end,
-          SPid ! {connected, User},
-          NewConnected = [{User, SPid} | Connected],
-          if
-            length(NewConnected) == 2 ->
-              self() ! tick,
-              loop(Players);
-            true ->
-              connector(Rid, Players, NewConnected)
-          end;
-        true ->
-          %% User not in the match
-          Pid ! {error, "User not in this match"},
-          connector(Rid, Players, Connected)
+    {connect, User1, Pid1} ->
+      receive
+      {connect, User2, Pid2} ->
+        Pid1 ! {connected, User1},
+        Pid2 ! {connected, User2},
+        self() ! tick,
+        loop(Players)
       end
   end.
 
