@@ -8,17 +8,176 @@ import java.util.logging.Logger;
 import java.util.logging.Level;
 
 public class Client extends PApplet {
+    String currentScene = "Menu";
+    String username = "";
+    String password = "";
+    boolean typingUsername = true;
+    boolean loginSuccess = false;
 
     public void settings(){
         size(800, 800);
     }
 
-    public void setup(){
-
+    public void setup() {
+        smooth();
+        textSize(16);
+        textAlign(CENTER, CENTER);
     }
 
-    public void draw(){
-        ellipse(300, 300, 60, 60);
+    public void draw() {
+        background(0);
+
+        switch (currentScene) {
+            case "Menu":
+                drawMenu();
+                break;
+            case "Login":
+                drawLogin();
+                break;
+            case "CreateAccount":
+               drawCreateAccount();
+                break;
+            default:
+                drawMenu();
+                break;
+        }
+    }
+
+    private void drawMenu(){
+        fill(255);
+        textSize(32);
+        text("Menu", (float) width / 2, (float) height / 2 - 70);
+        textSize(16);
+
+        // Botão de Login
+        fill(100, 200, 100);
+        rect((float) width / 2 - 50, (float) height / 2 - 20, 100, 30, 10);
+        fill(0);
+        text("Login", (float) width / 2, (float) height / 2 - 6);
+
+        // Botão de Criar Conta
+        fill(100, 200, 100);
+        rect((float) width / 2 - 50, (float) height / 2 + 40, 100, 30, 10);
+        fill(0);
+        text("Criar Conta", (float) width / 2, (float) height / 2 + 55);
+    }
+
+    private void drawLogin(){
+        fill(255);
+        textSize(32);
+        text("Login", (float) width / 2, (float) height / 2 - 100);
+        textSize(16);
+
+        // Caixa de username
+        fill(typingUsername ? 200 : 150);
+        rect((float) width / 2 - 100, (float) height / 2 - 60, 200, 30, 10);
+        fill(0);
+
+        // Caixa de password
+        fill(!typingUsername ? 200 : 150);
+        rect((float) width / 2 - 100, (float) height / 2 - 10, 200, 30, 10);
+        fill(0);
+
+        // Botão de login
+        fill(100, 200, 100);
+        rect((float) width / 2 - 50, (float) height / 2 + 40, 100, 30, 10);
+        fill(0);
+        text("Login", (float) width / 2, (float) height / 2 + 55);
+
+        // Botão de voltar
+        fill(200, 100, 100);
+        rect((float) width / 2 - 50, (float) height / 2 + 80, 100, 30, 10);
+        fill(0);
+        text("Voltar", (float) width / 2, (float) height / 2 + 95);
+    }
+
+    private void drawCreateAccount(){
+        fill(255);
+        textSize(32);
+        text("Criar Conta", (float) width / 2, (float) height / 2 - 100);
+        textSize(16);
+
+        // Caixa de username
+        fill(typingUsername ? 200 : 150);
+        rect((float) width / 2 - 100, (float) height / 2 - 60, 200, 30, 10);
+        fill(0);
+        text(username, (float) width / 2 - 100, (float) height / 2 - 45);
+
+        // Caixa de password
+        fill(!typingUsername ? 200 : 150);
+        rect((float) width / 2 - 100, (float) height / 2 - 10, 200, 30, 10);
+        fill(0);
+
+        // Botão de criar conta
+        fill(100, 200, 100);
+        rect((float) width / 2 - 50, (float) height / 2 + 40, 100, 30, 10);
+        fill(0);
+        text("Criar Conta", (float) width / 2, (float) height / 2 + 55);
+
+        // Botão de voltar
+        fill(200, 100, 100);
+        rect((float) width / 2 - 50, (float) height / 2 + 80, 100, 30, 10);
+        fill(0);
+        text("Voltar", (float) width / 2, (float) height / 2 + 95);
+    }
+
+    public void mousePressed() {
+        if (currentScene.equals("Menu")) {
+            // Verifica clique no botão "Login"
+            if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
+                    mouseY > height / 2 - 20 && mouseY < height / 2 + 10) {
+                currentScene = "Login";
+            }
+            // Verifica clique no botão "Criar Conta"
+            else if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
+                    mouseY > height / 2 + 40 && mouseY < height / 2 + 70) {
+                currentScene = "CreateAccount";
+            }
+        }
+        if (currentScene.equals("Login")) {
+            if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
+                        mouseY > height / 2 + 80 && mouseY < height / 2 + 110) {
+                    currentScene = "Menu";
+                }
+            if (mouseX > width / 2 - 100 && mouseX < width / 2 + 100 &&
+                    mouseY > height / 2 - 60 && mouseY < height / 2 - 30) {
+                typingUsername = true;
+                println("Caixa de username ativada");
+            } else if (mouseX > width / 2 - 100 && mouseX < width / 2 + 100 &&
+                    mouseY > height / 2 - 10 && mouseY < height / 2 + 20) {
+                typingUsername = false;
+                println("Caixa de password ativada");
+            } else {
+                typingUsername = false;
+                println("Nenhuma caixa ativada");
+            }
+        }
+        if (currentScene.equals("CreateAccount")) {
+            if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
+                    mouseY > height / 2 + 80 && mouseY < height / 2 + 110) {
+                currentScene = "Menu";
+            }
+        }
+    }
+
+    public void keyPressed() {
+        if (currentScene.equals("Login") || currentScene.equals("CreateAccount")) {
+            if (typingUsername) {
+                if (key == BACKSPACE && !username.isEmpty()) {
+                    username = username.substring(0, username.length() - 1);
+                } else if (key != BACKSPACE && key != ENTER) {
+                    username += key;
+                }
+                println("Username: " + username);
+            } else {
+                if (key == BACKSPACE && !password.isEmpty()) {
+                    password = password.substring(0, password.length() - 1);
+                } else if (key != BACKSPACE && key != ENTER) {
+                    password += key;
+                }
+                println("Password: " + password);
+            }
+        }
     }
 
     private static final Logger logger = Logger.getLogger(Client.class.getName());
