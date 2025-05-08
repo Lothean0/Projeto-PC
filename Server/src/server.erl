@@ -60,12 +60,11 @@ user_logged_out(Sock) ->
 user_logged_in(Sock, User) ->
   receive
     {tcp, Sock, Data} ->
-      CleanData = string:trim(Data), %% Trim the input
-      case string:tokens(CleanData, " ") of
+      io:format("Received data: ~p~n", [Data]),
+      case string:tokens(string:trim(Data), " ") of
         ["/f"] ->
           %% Send a message to the matchmaker process
           matchmaker ! {self(), {find_match, User, loginManager:check_lv(User)}},
-          gen_tcp:send(Sock, "Finding a match...\n"),
           user_logged_in(Sock, User);
         ["/Lv"] ->
           %% Check level
@@ -74,7 +73,7 @@ user_logged_in(Sock, User) ->
               gen_tcp:send(Sock, "Failed to check level\n"),
               user_logged_in(Sock, User);
             Lv ->
-              gen_tcp:send(Sock, "Your level is: " ++ integer_to_list(Lv) ++ "\n"),
+              gen_tcp:send(Sock, io_lib:format("~p", [Lv]) ++ "\n"),
               user_logged_in(Sock, User)
           end;
         ["/q"] ->
@@ -112,9 +111,11 @@ match(MatchPid, Sock, User) ->
           gen_tcp:send(Sock, "Invalid command\n")
       end,
       match(MatchPid, Sock, User);
-    {update, P} ->
+    {update, {P1,P2}} ->
+      {Px1,Py1} = P1,
+      {Px2,Py2} = P2,
       %% Update the position of the player
-      gen_tcp:send(Sock, "Your position is: " ++ io_lib:format("~p", [P]) ++ "\n"),
+      gen_tcp:send(Sock, io_lib:format("{~p,~p}", [Px1,Py1]) ++ ";" ++ io_lib:format("{~p,~p}", [Px2,Py2]) ++ "\n"),
       match(MatchPid, Sock, User);
     {error, Msg} ->
       %% Handle error messages

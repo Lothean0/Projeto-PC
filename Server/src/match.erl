@@ -62,8 +62,8 @@ loop(Players) ->
         {User2, _Lv2, SPid2, {NewP2, NewV2, A2, Ps2, Pi2, Pt2}}
       ],
       %% Send updated positions to players
-      SPid1 ! {update, NewP1},
-      SPid2 ! {update, NewP2},
+      SPid1 ! {update, {NewP1, NewP2}},
+      SPid2 ! {update, {NewP2, NewP1}},
       %% Schedule the next tick
       timer:send_after(10000, self(), tick),
       loop(NewPlayers)

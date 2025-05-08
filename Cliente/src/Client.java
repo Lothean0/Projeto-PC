@@ -7,6 +7,8 @@ import processing.core.PApplet;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
+import static java.lang.Thread.sleep;
+
 public class Client extends PApplet {
     String currentScene = "Menu";
     String username = "";
@@ -17,6 +19,7 @@ public class Client extends PApplet {
     Socket socket;
     PrintWriter out;
     BufferedReader in;
+    String Lvl = "";
 
     public void settings(){
         size(800, 800);
@@ -181,7 +184,7 @@ public class Client extends PApplet {
         text("User: " + username, (float) width / 2, (float) height / 2 - 100);
 
         textSize(16);
-        text("Level: 1" , (float) width / 2, (float) height / 2 - 60);
+        text("Level: " + Lvl , (float) width / 2, (float) height / 2 - 60);
         text("Vitorias: 0", (float) width / 2, (float) height / 2 - 30);
         text("Derrotas: 0", (float) width / 2, (float) height / 2);
         text("Streak de vitorias : 0", (float) width / 2, (float) height / 2 + 30);
@@ -201,6 +204,7 @@ public class Client extends PApplet {
     }
 
     public void mousePressed() {
+        String response = "";
         if (currentScene.equals("Menu")) {
             // Verifica clique no botão "Login"
             if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
@@ -241,7 +245,21 @@ public class Client extends PApplet {
                 if (!username.isEmpty() && !password.isEmpty()){
                     out.println("/l " + username + " " + password);
                     out.flush();
-                    currentScene = "MatchPage";
+                    try {
+                        response = in.readLine();
+
+                    if (response.equalsIgnoreCase("Login successful")) {
+                        System.out.println(response);
+                        out.println("/Lv");
+                        out.flush();
+                        Lvl = in.readLine();
+                        currentScene = "MatchPage";
+                    } else {
+                        System.out.println(response);
+                    }
+                    } catch (IOException e) {
+                        logger.log(Level.SEVERE, "Erro ao ler do servidor", e);
+                    }
                 }
             }
             // Caixa de username
@@ -278,9 +296,22 @@ public class Client extends PApplet {
                 if (!username.isEmpty() && !password.isEmpty()){
                     out.println("/cr " + username + " " + password);
                     out.flush();
-                    currentScene = "Menu";
-                    username = "";
-                    password = "";
+                    try {
+                        response = in.readLine();
+                    } catch (IOException e) {
+                        logger.log(Level.SEVERE, "Erro ao ler do servidor", e);
+                    }
+                    if (response.equals("Account created successfully")) {
+                        System.out.println(response);
+                        currentScene = "Menu";
+                        username = "";
+                        password = "";
+                    } else {
+                        System.out.println(response);
+                        username = "";
+                        password = "";
+                    }
+
                 }
             }
             // Caixa de username
@@ -366,6 +397,7 @@ public class Client extends PApplet {
             out = new PrintWriter(socket.getOutputStream(), true);
 
             // Thread para ler do servidor
+            /*
             Thread readerThread = new Thread(() -> {
                 while (true) {
                     try {
@@ -377,6 +409,7 @@ public class Client extends PApplet {
                 }
             });
             readerThread.start();
+            */
 
                 // Fechar recursos
         } catch (IOException e) {
