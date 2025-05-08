@@ -8,8 +8,7 @@ start() ->
   Rooms = #{},
   Waiting = [],
   Pid = spawn(fun() -> loop(Rooms, Rid, Waiting) end),
-  register(?MODULE, Pid),
-  Pid.
+  register(?MODULE, Pid).
 
 loop(Rooms, Rid, Waiting) ->
   receive
