@@ -23,6 +23,7 @@ acceptor(LSock) ->
 user_logged_out(Sock) ->
   receive
     {tcp, _, Data} ->
+      io:format("Received data: ~p~n", [Data]),
       case string:tokens(Data, " ") of
         ["/cr", User, Pass] ->
           %% Create account
