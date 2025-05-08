@@ -12,6 +12,8 @@ public class Client extends PApplet {
     String username = "";
     String password = "";
     boolean typingUsername = true;
+    boolean typingPassword = false;
+    boolean ignoreFirstClick = false;
     Socket socket;
     PrintWriter out;
     BufferedReader in;
@@ -36,6 +38,9 @@ public class Client extends PApplet {
                 break;
             case "CreateAccount":
                 drawCreateAccount();
+                break;
+            case "MatchPage":
+                drawMatchPage();
                 break;
             default:
                 drawMenu();
@@ -83,7 +88,7 @@ public class Client extends PApplet {
         textAlign(CENTER, CENTER);
 
         // Caixa de password
-        fill(!typingUsername ? 200 : 150);
+        fill(typingPassword ? 200 : 150);
         rect((float) width / 2 - 100, (float) height / 2 - 10, 200, 30, 10);
         fill(0);
         textAlign(LEFT, CENTER);
@@ -112,6 +117,8 @@ public class Client extends PApplet {
         rect((float) width / 2 - 50, (float) height / 2 + 80, 100, 30, 10);
         fill(0);
         text("Voltar", (float) width / 2, (float) height / 2 + 95);
+
+
     }
 
     private void drawCreateAccount(){
@@ -135,7 +142,7 @@ public class Client extends PApplet {
         textAlign(CENTER, CENTER);
 
         // Caixa de password
-        fill(!typingUsername ? 200 : 150);
+        fill(typingPassword ? 200 : 150);
         rect((float) width / 2 - 100, (float) height / 2 - 10, 200, 30, 10);
         fill(0);
         textAlign(LEFT, CENTER);
@@ -164,6 +171,33 @@ public class Client extends PApplet {
         rect((float) width / 2 - 50, (float) height / 2 + 80, 100, 30, 10);
         fill(0);
         text("Voltar", (float) width / 2, (float) height / 2 + 95);
+
+    }
+
+    private void drawMatchPage(){
+        fill(0);
+        textSize(32);
+        fill(255);
+        text("User: " + username, (float) width / 2, (float) height / 2 - 100);
+
+        textSize(16);
+        text("Level: 1" , (float) width / 2, (float) height / 2 - 60);
+        text("Vitorias: 0", (float) width / 2, (float) height / 2 - 30);
+        text("Derrotas: 0", (float) width / 2, (float) height / 2);
+        text("Streak de vitorias : 0", (float) width / 2, (float) height / 2 + 30);
+
+        // Botão de Logout
+        fill(200, 100, 100);
+        rect((float) width / 2 - 50, (float) height / 2 + 95, 100, 30, 10);
+        fill(0);
+        text("Logout", (float) width / 2, (float) height / 2 + 110);
+
+        // Botão de Match
+        fill(100, 200, 100);
+        rect((float) width / 2 - 50, (float) height / 2 + 55, 100, 30, 10);
+        fill(0);
+        text("Match", (float) width / 2, (float) height / 2 + 70);
+
     }
 
     public void mousePressed() {
@@ -172,14 +206,27 @@ public class Client extends PApplet {
             if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
                     mouseY > height / 2 - 20 && mouseY < height / 2 + 10) {
                 currentScene = "Login";
+                typingUsername = false;
+                typingPassword = false;
+                ignoreFirstClick = true;
             }
             // Verifica clique no botão "Criar Conta"
             else if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
                     mouseY > height / 2 + 40 && mouseY < height / 2 + 70) {
                 currentScene = "CreateAccount";
+                typingUsername = false;
+                typingPassword = false;
+                ignoreFirstClick = true;
             }
         }
+
         if (currentScene.equals("Login")) {
+            if (ignoreFirstClick) {
+                ignoreFirstClick = false; // Ignora o clique inicial
+                return;
+            }
+            typingUsername = false;
+            typingPassword = false;
             // Botão voltar
             if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
                     mouseY > height / 2 + 80 && mouseY < height / 2 + 110) {
@@ -194,6 +241,7 @@ public class Client extends PApplet {
                 if (!username.isEmpty() && !password.isEmpty()){
                     out.println("/l " + username + " " + password);
                     out.flush();
+                    currentScene = "MatchPage";
                 }
             }
             // Caixa de username
@@ -203,13 +251,20 @@ public class Client extends PApplet {
                 println("Caixa de username ativada");
             }
             // Caixa de password
-            else if (mouseX > width / 2 - 100 && mouseX < width / 2 + 100 &&
+            else if (mouseX > width / 2 - 100 && mouseX < width / 2 + 120 &&
                     mouseY > height / 2 - 10 && mouseY < height / 2 + 20) {
-                typingUsername = false;
+                typingPassword = true;
                 println("Caixa de password ativada");
             }
         }
+
         if (currentScene.equals("CreateAccount")) {
+            if (ignoreFirstClick) {
+                ignoreFirstClick = false; // Ignora o clique inicial
+                return;
+            }
+            typingUsername = false;
+            typingPassword = false;
             // Botão voltar
             if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
                     mouseY > height / 2 + 80 && mouseY < height / 2 + 110) {
@@ -223,6 +278,9 @@ public class Client extends PApplet {
                 if (!username.isEmpty() && !password.isEmpty()){
                     out.println("/cr " + username + " " + password);
                     out.flush();
+                    currentScene = "Menu";
+                    username = "";
+                    password = "";
                 }
             }
             // Caixa de username
@@ -234,8 +292,24 @@ public class Client extends PApplet {
             // Caixa de password
             else if (mouseX > width / 2 - 100 && mouseX < width / 2 + 100 &&
                     mouseY > height / 2 - 10 && mouseY < height / 2 + 20) {
-                typingUsername = false;
+                typingPassword = true;
                 println("Caixa de password ativada");
+            }
+        }
+
+        if (currentScene.equals("MatchPage")) {
+            // Botão de Logout
+            if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
+                    mouseY > height / 2 - 20 && mouseY < height / 2 + 10) {
+                currentScene = "Menu";
+                username = "";
+                password = "";
+            }
+            // Botão de Match
+            else if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
+                    mouseY > height / 2 + 40 && mouseY < height / 2 + 70) {
+                out.println("/f");
+                out.flush();
             }
         }
     }
@@ -249,6 +323,7 @@ public class Client extends PApplet {
                     username += key;
                 } else if (key == TAB) {
                     typingUsername = false;
+                    typingPassword = true;
                 }
                 println("Username: " + username);
             } else {
@@ -257,11 +332,29 @@ public class Client extends PApplet {
                 } else if (key != BACKSPACE && key != ENTER && key != TAB && key != CODED) {
                     password += key;
                 } else if (key == TAB) {
+                    typingPassword = false;
                     typingUsername = true;
                 }
                 println("Password: " + password);
             }
         }
+
+        if (currentScene.equals("MatchPage")) {
+            // Botão de Logout
+            if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
+                    mouseY > height / 2 - 20 && mouseY < height / 2 + 10) {
+                currentScene = "Menu";
+                username = "";
+                password = "";
+            }
+            // Botão de Match
+            else if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
+                    mouseY > height / 2 + 40 && mouseY < height / 2 + 70) {
+                out.println("/f");
+                out.flush();
+            }
+        }
+
     }
 
     private static final Logger logger = Logger.getLogger(Client.class.getName());
