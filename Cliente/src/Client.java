@@ -10,12 +10,60 @@ import java.util.logging.Level;
 import static java.lang.Thread.sleep;
 
 public class Client extends PApplet {
+    public static class Reader implements Runnable{
+        String response;
+        String expected;
+        String menutochange = "";
+        String currentMenu;
+        Boolean searching;
+        BufferedReader in;
+
+        public Reader(String response,BufferedReader in, String expected) {
+            this.expected = expected;
+            this.response = response;
+            this.in = in;
+        }
+
+        public Reader(String response,BufferedReader in, String expected, String menutochange, String currentMenu) {
+            this.expected = expected;
+            this.menutochange = menutochange;
+            this.currentMenu = currentMenu;
+            this.response = response;
+            this.in = in;
+        }
+
+        public Reader(String response,BufferedReader in, String expected, Boolean searching) {
+            this.expected = expected;
+            this.response = response;
+            this.searching = searching;
+            this.in = in;
+        }
+
+        public void run (){
+            try {
+                response = in.readLine();
+                if (response.equalsIgnoreCase(expected)){
+                    if (!menutochange.equalsIgnoreCase("")){
+                        currentMenu = menutochange;
+                    } else {
+                        System.out.println("U");
+                        searching = true;
+                    }
+                }
+            } catch (IOException e) {
+                logger.log(Level.SEVERE, "Erro ao ler do servidor", e);
+            }
+        }
+    }
+
     String currentScene = "Menu";
     String username = "";
     String password = "";
     boolean typingUsername = true;
     boolean typingPassword = false;
     boolean ignoreFirstClick = false;
+    boolean showMiniScene = false;
+    boolean searching = false;
     Socket socket;
     PrintWriter out;
     BufferedReader in;
@@ -45,9 +93,23 @@ public class Client extends PApplet {
             case "MatchPage":
                 drawMatchPage();
                 break;
+
             default:
                 drawMenu();
                 break;
+        }
+
+        if (showMiniScene) {
+            fill(50,50,50,200);
+            rect((float) width / 2 - 50, (float) height / 2 - 50, 100, 100);
+            fill(0);
+            text("Searching for a match...", (float) width / 2, (float) height / 2);
+
+            // Botão para fechar a mini janela
+            fill(200, 100, 100);
+            rect((float) width / 2 - 50, (float) height / 2 + 50, 100, 30, 10);
+            fill(0);
+            text("Close", (float) width / 2, (float) height / 2 + 65);
         }
     }
 
@@ -199,8 +261,13 @@ public class Client extends PApplet {
         fill(100, 200, 100);
         rect((float) width / 2 - 50, (float) height / 2 + 55, 100, 30, 10);
         fill(0);
-        text("Match", (float) width / 2, (float) height / 2 + 70);
-
+        if (!searching) {
+            text("Match", (float) width / 2, (float) height / 2 + 70);
+            System.out.println("OLA1");
+        } else {
+            System.out.println("OLA2");
+            text("Searching", (float) width / 2, (float) height / 2 + 70);
+        }
     }
 
     public void mousePressed() {
@@ -253,7 +320,10 @@ public class Client extends PApplet {
                         out.println("/Lv");
                         out.flush();
                         Lvl = in.readLine();
+                        String[] parts = Lvl.split(" ");
+                        Lvl = parts[parts.length -1];
                         currentScene = "MatchPage";
+                        ignoreFirstClick = true;
                     } else {
                         System.out.println(response);
                     }
@@ -329,6 +399,10 @@ public class Client extends PApplet {
         }
 
         if (currentScene.equals("MatchPage")) {
+            if (ignoreFirstClick){
+                ignoreFirstClick = false; // Ignora o clique inicial
+                return;
+            }
             // Botão de Logout
             if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
                     mouseY > height / 2 - 20 && mouseY < height / 2 + 10) {
@@ -339,8 +413,32 @@ public class Client extends PApplet {
             // Botão de Match
             else if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
                     mouseY > height / 2 + 40 && mouseY < height / 2 + 70) {
+                System.out.println("Botão Match clicado");
                 out.println("/f");
                 out.flush();
+                try {
+                    response = in.readLine();
+                    if (response.equalsIgnoreCase("Searching for a match...")) {
+                        System.out.println(response);
+                        searching = true;
+                    }
+                    else {
+                        System.out.println(response);
+                    }
+                    String exepected = "Match found!";
+                    String test = "Menu";
+                    new Thread(new Reader(response,in,exepected,currentScene,test)).start();
+                } catch (IOException e) {
+                    logger.log(Level.SEVERE, "Erro ao ler do servidor", e);
+                }
+            }
+        }
+
+        // Botão para fechar a mini janela
+        if (showMiniScene) {
+            if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
+                    mouseY > height / 2 + 50 && mouseY < height / 2 + 80) {
+                showMiniScene = false; // Fecha a mini janela
             }
         }
     }
@@ -369,23 +467,6 @@ public class Client extends PApplet {
                 println("Password: " + password);
             }
         }
-
-        if (currentScene.equals("MatchPage")) {
-            // Botão de Logout
-            if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
-                    mouseY > height / 2 - 20 && mouseY < height / 2 + 10) {
-                currentScene = "Menu";
-                username = "";
-                password = "";
-            }
-            // Botão de Match
-            else if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
-                    mouseY > height / 2 + 40 && mouseY < height / 2 + 70) {
-                out.println("/f");
-                out.flush();
-            }
-        }
-
     }
 
     private static final Logger logger = Logger.getLogger(Client.class.getName());

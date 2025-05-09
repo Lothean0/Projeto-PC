@@ -93,7 +93,7 @@ user_logged_in(Sock, User) ->
       gen_tcp:send(Sock, "Searching for a match...\n"),
       user_logged_in(Sock, User);
     {match_found, MatchPid} ->
-      gen_tcp:send(Sock, "Match found! MatchPid: " ++ pid_to_list(MatchPid) ++ "\n"),
+      gen_tcp:send(Sock, "Match found!\n"),
       MatchPid ! {connect, User, self()},
       match(MatchPid, Sock, User)
   end.
