@@ -26,33 +26,38 @@ user_logged_out(Sock) ->
       io:format("Received data: ~p~n", [Data]),
       case string:tokens(Data, " ") of
         ["/cr", User, Pass] ->
-          %% Create account
-          loginManager:create_account(User, Pass),
-          gen_tcp:send(Sock, "Account created successfully\n"),
-          user_logged_out(Sock);
+          case loginManager:create_account(User, Pass) of
+            ok ->
+              send_message(Sock, {reply, "Account created successfully"}),
+              user_logged_out(Sock);
+            {error, user_exists} ->
+              %% User already exists
+              send_message(Sock, {reply, "User already exists"}),
+              user_logged_out(Sock)
+          end;
         ["/cl", User, Pass] ->
           %% Close account
           case loginManager:close_account(User, Pass) of
             ok ->
-              gen_tcp:send(Sock, "Account closed successfully\n"),
+              send_message(Sock, {reply, "Account closed successfully"}),
               user_logged_out(Sock);
             _ ->
-              gen_tcp:send(Sock, "Account closure failed\n"),
+              send_message(Sock, {reply, "Account closure failed"}),
               user_logged_out(Sock)
           end;
         ["/l", User, Pass] ->
           %% Login
           case loginManager:login(User, Pass, Sock) of
             ok ->
-              gen_tcp:send(Sock, "Login successful\n"),
+              send_message(Sock, {reply, "Login successful"}),
               user_logged_in(Sock, User);
             _ ->
-              gen_tcp:send(Sock, "Login failed\n"),
+              send_message(Sock, {reply, "Login failed"}),
               user_logged_out(Sock)
           end;
         _ ->
           %% Invalid command
-          gen_tcp:send(Sock, "Invalid command\n"),
+          send_message(Sock, {reply, "Invalid command"}),
           user_logged_out(Sock)
       end
   end.
@@ -70,30 +75,30 @@ user_logged_in(Sock, User) ->
           %% Check level
           case loginManager:check_lv(User) of
             user_not_found ->
-              gen_tcp:send(Sock, "Failed to check level\n"),
+              send_message(Sock, {reply, "Failed to check LV"}),
               user_logged_in(Sock, User);
             Lv ->
-              gen_tcp:send(Sock, io_lib:format("~p", [Lv]) ++ "\n"),
+              send_message(Sock, {checkLV, Lv}),
               user_logged_in(Sock, User)
           end;
         ["/q"] ->
           case loginManager:logout(User) of
             ok ->
-              gen_tcp:send(Sock, "Logged out successfully\n"),
+              send_message(Sock, {reply, "Logged out successfully"}),
               user_logged_out(Sock);
             _ ->
-              gen_tcp:send(Sock, "Logout failed\n"),
+              send_message(Sock, {reply,"Logout failed"}),
               user_logged_in(Sock, User)
           end;
         _ ->
-          gen_tcp:send(Sock, "Invalid command\n"),
+          send_message(Sock, {reply,"Invalid command"}),
           user_logged_in(Sock, User)
       end;
     waiting ->
-      gen_tcp:send(Sock, "Searching for a match...\n"),
+      send_message(Sock, {reply,"Searching for a match..."}),
       user_logged_in(Sock, User);
     {match_found, MatchPid} ->
-      gen_tcp:send(Sock, "Match found!\n"),
+      send_message(Sock, {reply,"Match found!"}),
       MatchPid ! {connect, User, self()},
       match(MatchPid, Sock, User)
   end.
@@ -108,7 +113,7 @@ match(MatchPid, Sock, User) ->
           MatchPid ! {move, User, list_to_integer(Ax), list_to_integer(Ay), self()};
         _ ->
           %% Handle invalid input
-          gen_tcp:send(Sock, "Invalid command\n")
+          gen_tcp:send(Sock, "Invalid command")
       end,
       match(MatchPid, Sock, User);
     {update, {P1,P2}} ->
@@ -132,5 +137,32 @@ match(MatchPid, Sock, User) ->
       loginManager:lose(User),
       user_logged_in(Sock, User)
   end.
+
+
+format_XMl(Data) ->
+  case Data of
+    {gamedata, {P1, P2}} ->
+      {P1x, P1y} = P1,
+      {P2x, P2y} = P2,
+      XML_Data = {gamedata,[{player1, [{position, [{x, P1x}, {y, P1y}]}]},
+                      {player2, [{position, [{x, P2x}, {y, P2y}]}]}], []},
+      XML=lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
+      XML;
+    {reply, Text} ->
+      XML_Data = {reply, [{text, Text}], []},
+      XML=lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
+      XML;
+    {checkLV, LV} ->
+      XML_Data = {checkLV, [{level, integer_to_list(LV)}], []},
+      XML=lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
+      XML
+  end.
+
+
+
+send_message(Socket, Message) ->
+  Response = format_XMl(Message),
+  io:format("Sending message: ~p~n", [Response]),
+  gen_tcp:send(Socket, io_lib:format("~p~n", [Response])).
 
 

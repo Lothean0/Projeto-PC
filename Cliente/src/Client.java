@@ -1,75 +1,148 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 import processing.core.PApplet;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
-import static java.lang.Thread.sleep;
 
 public class Client extends PApplet {
-    public static class Reader implements Runnable{
-        String response;
-        String expected;
-        String menutochange = "";
-        String currentMenu;
-        Boolean searching;
-        BufferedReader in;
+    public static class Reader implements Runnable {
+        Variables vars;
 
-        public Reader(String response,BufferedReader in, String expected) {
-            this.expected = expected;
-            this.response = response;
-            this.in = in;
+        public Reader(Variables vars) {
+            this.vars = vars;
         }
 
-        public Reader(String response,BufferedReader in, String expected, String menutochange, String currentMenu) {
-            this.expected = expected;
-            this.menutochange = menutochange;
-            this.currentMenu = currentMenu;
-            this.response = response;
-            this.in = in;
-        }
-
-        public Reader(String response,BufferedReader in, String expected, Boolean searching) {
-            this.expected = expected;
-            this.response = response;
-            this.searching = searching;
-            this.in = in;
-        }
-
-        public void run (){
+        public void run() {
             try {
-                response = in.readLine();
-                if (response.equalsIgnoreCase(expected)){
-                    if (!menutochange.equalsIgnoreCase("")){
-                        currentMenu = menutochange;
-                    } else {
-                        System.out.println("U");
-                        searching = true;
+                while (true) {
+                    String response = vars.in.readLine();
+                    response = response.replaceFirst("^[^<]+", "");
+                    response = response.replace("\\\"", "\"");
+                    response = response.replaceFirst("(</?\\w+[^>]*?/?>).*", "$1");
+                    System.out.println(response);
+                    InputStream inputStream = new ByteArrayInputStream(response.getBytes());
+
+                    // Parse the XML
+                    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                    DocumentBuilder builder = factory.newDocumentBuilder();
+                    Document document = builder.parse(inputStream);
+
+                    // Normalize the document
+                    document.getDocumentElement().normalize();
+
+                    // Get the root element
+                    Element root = document.getDocumentElement();
+                    System.out.println("Root element: " + root.getTagName());
+                    switch (root.getTagName()) {
+                        case "reply":
+                            String replyText = root.getAttribute("text");
+                            System.out.println("Reply: " + replyText);
+                            switch (replyText) {
+                                case "Login successful":
+                                    System.out.println("Login successful");
+                                    vars.out.println("/Lv");
+                                    vars.out.flush();
+                                    break;
+                                case "Account created successfully", "Account closed successfully",
+                                     "Logged out successfully":
+                                    vars.currentScene = "Menu";
+                                    vars.username = "";
+                                    vars.password = "";
+                                    break;
+                                case "Username already exists":
+                                    vars.username = "";
+                                    vars.password = "";
+                                    System.out.println("Username already exists");
+                                    break;
+                                case "Account closure failed":
+                                    vars.username = "";
+                                    vars.password = "";
+                                    System.out.println("Account closure failed");
+                                    break;
+                                case "Searching for a match...":
+                                    vars.searching = true;
+                                    break;
+                                case "Match  found!":
+                                    vars.searching = false;
+                                    vars.currentScene = "MatchPage";
+                                    break;
+                                case "Invalid command":
+                                    System.out.println("Invalid command");
+                                    break;
+                                default:
+                                    System.out.println(replyText);
+                                    break;
+                            }
+                            break;
+                        case "checkLV":
+                            String level = root.getAttribute("level");
+                            vars.Lvl = level;
+                            vars.currentScene = "MatchPage";
+                            System.out.println("Level: " + level);
+                        case "gamedata":
+                            NodeList gameData = root.getElementsByTagName("game");
+                            for (int i = 0; i < gameData.getLength(); i++) {
+                            }
+                            break;
+                        default:
+                            break;
+
                     }
                 }
             } catch (IOException e) {
                 logger.log(Level.SEVERE, "Erro ao ler do servidor", e);
+            } catch (ParserConfigurationException | SAXException e) {
+                throw new RuntimeException(e);
             }
         }
     }
 
-    String currentScene = "Menu";
-    String username = "";
-    String password = "";
-    boolean typingUsername = true;
-    boolean typingPassword = false;
-    boolean ignoreFirstClick = false;
-    boolean showMiniScene = false;
-    boolean searching = false;
-    Socket socket;
-    PrintWriter out;
-    BufferedReader in;
-    String Lvl = "";
+    public static class Variables {
+        String currentScene;
+        String username;
+        String password;
+        boolean typingUsername;
+        boolean typingPassword;
+        boolean ignoreFirstClick;
+        boolean searching;
+        Socket socket;
+        PrintWriter out;
+        BufferedReader in;
+        String Lvl;
 
-    public void settings(){
+        public Variables() {
+            this.currentScene = "Menu";
+            this.username = "";
+            this.password = "";
+            this.typingUsername = true;
+            this.typingPassword = false;
+            this.ignoreFirstClick = false;
+            this.searching = false;
+            this.Lvl = "";
+            try {
+                this.socket = new Socket("127.0.0.1", Integer.parseInt("8000"));
+                this.in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
+                this.out = new PrintWriter(this.socket.getOutputStream(), true);
+
+            } catch (IOException e) {
+                logger.log(Level.SEVERE, "Erro na comunicação com o servidor", e);
+            }
+        }
+    }
+
+    Variables vars = new Variables();
+
+    public void settings() {
         size(800, 800);
     }
 
@@ -77,13 +150,14 @@ public class Client extends PApplet {
         smooth();
         textSize(16);
         textAlign(CENTER, CENTER);
-        connectToServer();
+        Thread readerThread = new Thread(new Reader(vars));
+        readerThread.start();
     }
 
     public void draw() {
         background(0);
 
-        switch (currentScene) {
+        switch (vars.currentScene) {
             case "Login":
                 drawLogin();
                 break;
@@ -98,22 +172,9 @@ public class Client extends PApplet {
                 drawMenu();
                 break;
         }
-
-        if (showMiniScene) {
-            fill(50,50,50,200);
-            rect((float) width / 2 - 50, (float) height / 2 - 50, 100, 100);
-            fill(0);
-            text("Searching for a match...", (float) width / 2, (float) height / 2);
-
-            // Botão para fechar a mini janela
-            fill(200, 100, 100);
-            rect((float) width / 2 - 50, (float) height / 2 + 50, 100, 30, 10);
-            fill(0);
-            text("Close", (float) width / 2, (float) height / 2 + 65);
-        }
     }
 
-    private void drawMenu(){
+    private void drawMenu() {
         fill(255);
         textSize(32);
         text("Menu", (float) width / 2, (float) height / 2 - 70);
@@ -132,18 +193,18 @@ public class Client extends PApplet {
         text("Criar Conta", (float) width / 2, (float) height / 2 + 55);
     }
 
-    private void drawLogin(){
+    private void drawLogin() {
         fill(255);
         textSize(32);
         text("Login", (float) width / 2, (float) height / 2 - 130);
         textSize(16);
 
         // Caixa de username
-        fill(typingUsername ? 200 : 150);
+        fill(vars.typingUsername ? 200 : 150);
         rect((float) width / 2 - 100, (float) height / 2 - 70, 200, 30, 10);
         fill(0);
         textAlign(LEFT, CENTER);
-        text(username, (float) width / 2 - 95, (float) height / 2 - 55);
+        text(vars.username, (float) width / 2 - 95, (float) height / 2 - 55);
         textAlign(CENTER, CENTER);
 
         // Label para username
@@ -153,16 +214,12 @@ public class Client extends PApplet {
         textAlign(CENTER, CENTER);
 
         // Caixa de password
-        fill(typingPassword ? 200 : 150);
+        fill(vars.typingPassword ? 200 : 150);
         rect((float) width / 2 - 100, (float) height / 2 - 10, 200, 30, 10);
         fill(0);
         textAlign(LEFT, CENTER);
         // Mostrar asteriscos para a senha
-        StringBuilder maskedPassword = new StringBuilder();
-        for (int i = 0; i < password.length(); i++) {
-            maskedPassword.append("*");
-        }
-        text(maskedPassword.toString(), (float) width / 2 - 95, (float) height / 2 + 5);
+        text("*".repeat(vars.password.length()), (float) width / 2 - 95, (float) height / 2 + 5);
         textAlign(CENTER, CENTER);
 
         // Label para password
@@ -186,18 +243,18 @@ public class Client extends PApplet {
 
     }
 
-    private void drawCreateAccount(){
+    private void drawCreateAccount() {
         fill(255);
         textSize(32);
         text("Criar Conta", (float) width / 2, (float) height / 2 - 130);
         textSize(16);
 
         // Caixa de username
-        fill(typingUsername ? 200 : 150);
-        rect((float) width / 2 - 100, (float) height / 2 -  70, 200, 30, 10);
+        fill(vars.typingUsername ? 200 : 150);
+        rect((float) width / 2 - 100, (float) height / 2 - 70, 200, 30, 10);
         fill(0);
         textAlign(LEFT, CENTER);
-        text(username, (float) width / 2 - 95, (float) height / 2 - 55);
+        text(vars.username, (float) width / 2 - 95, (float) height / 2 - 55);
         textAlign(CENTER, CENTER);
 
         // Label para username
@@ -207,16 +264,12 @@ public class Client extends PApplet {
         textAlign(CENTER, CENTER);
 
         // Caixa de password
-        fill(typingPassword ? 200 : 150);
+        fill(vars.typingPassword ? 200 : 150);
         rect((float) width / 2 - 100, (float) height / 2 - 10, 200, 30, 10);
         fill(0);
         textAlign(LEFT, CENTER);
         // Mostrar asteriscos para a senha
-        StringBuilder maskedPassword = new StringBuilder();
-        for (int i = 0; i < password.length(); i++) {
-            maskedPassword.append("*");
-        }
-        text(maskedPassword.toString(), (float) width / 2 - 95, (float) height / 2 + 5);
+        text("*".repeat(vars.password.length()), (float) width / 2 - 95, (float) height / 2 + 5);
         textAlign(CENTER, CENTER);
 
         // Label para password
@@ -239,14 +292,14 @@ public class Client extends PApplet {
 
     }
 
-    private void drawMatchPage(){
+    private void drawMatchPage() {
         fill(0);
         textSize(32);
         fill(255);
-        text("User: " + username, (float) width / 2, (float) height / 2 - 100);
+        text("User: " + vars.username, (float) width / 2, (float) height / 2 - 100);
 
         textSize(16);
-        text("Level: " + Lvl , (float) width / 2, (float) height / 2 - 60);
+        text("Level: " + vars.Lvl, (float) width / 2, (float) height / 2 - 60);
         text("Vitorias: 0", (float) width / 2, (float) height / 2 - 30);
         text("Derrotas: 0", (float) width / 2, (float) height / 2);
         text("Streak de vitorias : 0", (float) width / 2, (float) height / 2 + 30);
@@ -261,242 +314,155 @@ public class Client extends PApplet {
         fill(100, 200, 100);
         rect((float) width / 2 - 50, (float) height / 2 + 55, 100, 30, 10);
         fill(0);
-        if (!searching) {
+        if (!vars.searching) {
             text("Match", (float) width / 2, (float) height / 2 + 70);
-            System.out.println("OLA1");
         } else {
-            System.out.println("OLA2");
             text("Searching", (float) width / 2, (float) height / 2 + 70);
         }
     }
 
     public void mousePressed() {
-        String response = "";
-        if (currentScene.equals("Menu")) {
+        if (vars.currentScene.equals("Menu")) {
             // Verifica clique no botão "Login"
             if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
                     mouseY > height / 2 - 20 && mouseY < height / 2 + 10) {
-                currentScene = "Login";
-                typingUsername = false;
-                typingPassword = false;
-                ignoreFirstClick = true;
+                vars.currentScene = "Login";
+                vars.typingUsername = false;
+                vars.typingPassword = false;
+                vars.ignoreFirstClick = true;
             }
             // Verifica clique no botão "Criar Conta"
             else if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
                     mouseY > height / 2 + 40 && mouseY < height / 2 + 70) {
-                currentScene = "CreateAccount";
-                typingUsername = false;
-                typingPassword = false;
-                ignoreFirstClick = true;
+                vars.currentScene = "CreateAccount";
+                vars.typingUsername = false;
+                vars.typingPassword = false;
+                vars.ignoreFirstClick = true;
             }
         }
 
-        if (currentScene.equals("Login")) {
-            if (ignoreFirstClick) {
-                ignoreFirstClick = false; // Ignora o clique inicial
+        if (vars.currentScene.equals("Login")) {
+            if (vars.ignoreFirstClick) {
+                vars.ignoreFirstClick = false; // Ignora o clique inicial
                 return;
             }
-            typingUsername = false;
-            typingPassword = false;
+            vars.typingUsername = false;
+            vars.typingPassword = false;
             // Botão voltar
             if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
                     mouseY > height / 2 + 80 && mouseY < height / 2 + 110) {
-                currentScene = "Menu";
-                username = "";
-                password = "";
+                vars.currentScene = "Menu";
+                vars.username = "";
+                vars.password = "";
             }
             // Botão login
             else if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
                     mouseY > height / 2 + 40 && mouseY < height / 2 + 70) {
                 // Lógica de login aqui
-                if (!username.isEmpty() && !password.isEmpty()){
-                    out.println("/l " + username + " " + password);
-                    out.flush();
-                    try {
-                        response = in.readLine();
-
-                    if (response.equalsIgnoreCase("Login successful")) {
-                        System.out.println(response);
-                        out.println("/Lv");
-                        out.flush();
-                        Lvl = in.readLine();
-                        String[] parts = Lvl.split(" ");
-                        Lvl = parts[parts.length -1];
-                        currentScene = "MatchPage";
-                        ignoreFirstClick = true;
-                    } else {
-                        System.out.println(response);
-                    }
-                    } catch (IOException e) {
-                        logger.log(Level.SEVERE, "Erro ao ler do servidor", e);
-                    }
+                if (!vars.username.isEmpty() && !vars.password.isEmpty()) {
+                    vars.out.println("/l " + vars.username + " " + vars.password);
+                    vars.out.flush();
                 }
             }
             // Caixa de username
             else if (mouseX > width / 2 - 100 && mouseX < width / 2 + 120 &&
                     mouseY > height / 2 - 60 && mouseY < height / 2 - 30) {
-                typingUsername = true;
+                vars.typingUsername = true;
                 println("Caixa de username ativada");
             }
             // Caixa de password
             else if (mouseX > width / 2 - 100 && mouseX < width / 2 + 120 &&
                     mouseY > height / 2 - 10 && mouseY < height / 2 + 20) {
-                typingPassword = true;
+                vars.typingPassword = true;
                 println("Caixa de password ativada");
             }
         }
 
-        if (currentScene.equals("CreateAccount")) {
-            if (ignoreFirstClick) {
-                ignoreFirstClick = false; // Ignora o clique inicial
+        if (vars.currentScene.equals("CreateAccount")) {
+            if (vars.ignoreFirstClick) {
+                vars.ignoreFirstClick = false; // Ignora o clique inicial
                 return;
             }
-            typingUsername = false;
-            typingPassword = false;
+            vars.typingUsername = false;
+            vars.typingPassword = false;
             // Botão voltar
             if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
                     mouseY > height / 2 + 80 && mouseY < height / 2 + 110) {
-                currentScene = "Menu";
-                username = "";
-                password = "";
+                vars.currentScene = "Menu";
+                vars.username = "";
+                vars.password = "";
             }
             // Botão criar conta
             else if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
                     mouseY > height / 2 + 40 && mouseY < height / 2 + 70) {
-                if (!username.isEmpty() && !password.isEmpty()){
-                    out.println("/cr " + username + " " + password);
-                    out.flush();
-                    try {
-                        response = in.readLine();
-                    } catch (IOException e) {
-                        logger.log(Level.SEVERE, "Erro ao ler do servidor", e);
-                    }
-                    if (response.equals("Account created successfully")) {
-                        System.out.println(response);
-                        currentScene = "Menu";
-                        username = "";
-                        password = "";
-                    } else {
-                        System.out.println(response);
-                        username = "";
-                        password = "";
-                    }
-
+                if (!vars.username.isEmpty() && !vars.password.isEmpty()) {
+                    vars.out.println("/cr " + vars.username + " " + vars.password);
+                    vars.out.flush();
                 }
             }
             // Caixa de username
             else if (mouseX > width / 2 - 100 && mouseX < width / 2 + 100 &&
                     mouseY > height / 2 - 60 && mouseY < height / 2 - 30) {
-                typingUsername = true;
+                vars.typingUsername = true;
                 println("Caixa de username ativada");
             }
             // Caixa de password
             else if (mouseX > width / 2 - 100 && mouseX < width / 2 + 100 &&
                     mouseY > height / 2 - 10 && mouseY < height / 2 + 20) {
-                typingPassword = true;
+                vars.typingPassword = true;
                 println("Caixa de password ativada");
             }
         }
 
-        if (currentScene.equals("MatchPage")) {
-            if (ignoreFirstClick){
-                ignoreFirstClick = false; // Ignora o clique inicial
+        if (vars.currentScene.equals("MatchPage")) {
+            if (vars.ignoreFirstClick) {
+                vars.ignoreFirstClick = false; // Ignora o clique inicial
                 return;
             }
             // Botão de Logout
             if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
                     mouseY > height / 2 - 20 && mouseY < height / 2 + 10) {
-                currentScene = "Menu";
-                username = "";
-                password = "";
+                vars.currentScene = "Menu";
+                vars.username = "";
+                vars.password = "";
             }
             // Botão de Match
             else if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
                     mouseY > height / 2 + 40 && mouseY < height / 2 + 70) {
                 System.out.println("Botão Match clicado");
-                out.println("/f");
-                out.flush();
-                try {
-                    response = in.readLine();
-                    if (response.equalsIgnoreCase("Searching for a match...")) {
-                        System.out.println(response);
-                        searching = true;
-                    }
-                    else {
-                        System.out.println(response);
-                    }
-                    String exepected = "Match found!";
-                    String test = "Menu";
-                    new Thread(new Reader(response,in,exepected,currentScene,test)).start();
-                } catch (IOException e) {
-                    logger.log(Level.SEVERE, "Erro ao ler do servidor", e);
-                }
-            }
-        }
-
-        // Botão para fechar a mini janela
-        if (showMiniScene) {
-            if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
-                    mouseY > height / 2 + 50 && mouseY < height / 2 + 80) {
-                showMiniScene = false; // Fecha a mini janela
+                vars.out.println("/f");
+                vars.out.flush();
             }
         }
     }
 
     public void keyPressed() {
-        if (currentScene.equals("Login") || currentScene.equals("CreateAccount")) {
-            if (typingUsername) {
-                if (key == BACKSPACE && !username.isEmpty()) {
-                    username = username.substring(0, username.length() - 1);
+        if (vars.currentScene.equals("Login") || vars.currentScene.equals("CreateAccount")) {
+            if (vars.typingUsername) {
+                if (key == BACKSPACE && !vars.username.isEmpty()) {
+                    vars.username = vars.username.substring(0, vars.username.length() - 1);
                 } else if (key != BACKSPACE && key != ENTER && key != TAB && key != CODED) {
-                    username += key;
+                    vars.username += key;
                 } else if (key == TAB) {
-                    typingUsername = false;
-                    typingPassword = true;
+                    vars.typingUsername = false;
+                    vars.typingPassword = true;
                 }
-                println("Username: " + username);
+                println("Username: " + vars.username);
             } else {
-                if (key == BACKSPACE && !password.isEmpty()) {
-                    password = password.substring(0, password.length() - 1);
+                if (key == BACKSPACE && !vars.password.isEmpty()) {
+                    vars.password = vars.password.substring(0, vars.password.length() - 1);
                 } else if (key != BACKSPACE && key != ENTER && key != TAB && key != CODED) {
-                    password += key;
+                    vars.password += key;
                 } else if (key == TAB) {
-                    typingPassword = false;
-                    typingUsername = true;
+                    vars.typingPassword = false;
+                    vars.typingUsername = true;
                 }
-                println("Password: " + password);
+                println("Password: " + vars.password);
             }
         }
     }
 
     private static final Logger logger = Logger.getLogger(Client.class.getName());
-
-    void connectToServer() {
-        try {
-            socket = new Socket("127.0.0.1", Integer.parseInt("8000"));
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
-
-            // Thread para ler do servidor
-            /*
-            Thread readerThread = new Thread(() -> {
-                while (true) {
-                    try {
-                        System.out.println(in.readLine());
-                    } catch (IOException e) {
-                        logger.log(Level.SEVERE, "Erro ao ler do servidor", e);
-                        break;
-                    }
-                }
-            });
-            readerThread.start();
-            */
-
-                // Fechar recursos
-        } catch (IOException e) {
-                logger.log(Level.SEVERE, "Erro na comunicação com o servidor", e);
-                }
-        }
 
     public static void main(String[] args) {
         PApplet.main("Client");
