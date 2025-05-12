@@ -120,10 +120,8 @@ match(MatchPid, Sock, User) ->
       end,
       match(MatchPid, Sock, User);
     {update, {P1,P2}} ->
-      {Px1,Py1} = P1,
-      {Px2,Py2} = P2,
       %% Update the position of the player
-      gen_tcp:send(Sock, io_lib:format("{~p,~p}", [Px1,Py1]) ++ ";" ++ io_lib:format("{~p,~p}", [Px2,Py2]) ++ "\n"),
+      send_message(Sock, {gamedata, {P1, P2}}),
       match(MatchPid, Sock, User);
     {error, Msg} ->
       %% Handle error messages
