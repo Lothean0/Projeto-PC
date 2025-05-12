@@ -65,7 +65,7 @@ loop(Players) ->
       SPid1 ! {update, {NewP1, NewP2}},
       SPid2 ! {update, {NewP2, NewP1}},
       %% Schedule the next tick
-      timer:send_after(10000, self(), tick),
+      timer:send_after(100, self(), tick),
       loop(NewPlayers)
   end.
 

@@ -113,7 +113,7 @@ match(MatchPid, Sock, User) ->
       case string:tokens(CleanData, " ") of
         ["/m", Ax, Ay] ->
           %% Send move command to the match process
-          MatchPid ! {move, User, list_to_integer(Ax), list_to_integer(Ay), self()};
+          MatchPid ! {move, User, list_to_float(Ax), list_to_float(Ay), self()};
         _ ->
           %% Handle invalid input
           gen_tcp:send(Sock, "Invalid command")
@@ -146,8 +146,8 @@ format_XMl(Data) ->
       {P1x, P1y} = P1,
       {P2x, P2y} = P2,
       XML_Data = {gamedata, [
-        {player1, [{x, integer_to_list(P1x)}, {y, integer_to_list(P1y)}], []},
-        {player2, [{x, integer_to_list(P2x)}, {y, integer_to_list(P2y)}], []}
+        {player1, [{x, float_to_list(float(P1x))}, {y, float_to_list(float(P1y))}], []},
+        {player2, [{x, float_to_list(float(P2x))}, {y, float_to_list(float(P2y))}], []}
       ]},
       XML=lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
       XML;

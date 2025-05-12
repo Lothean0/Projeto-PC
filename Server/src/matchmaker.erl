@@ -22,8 +22,8 @@ loop(Rooms, Rid, Waiting) ->
           case lists:filter(fun({_, Lv2, _}) -> abs(Lv2 - Lv) =< 1 end, Waiting) of
             [Match | _] ->
               {User2, Lv2, SPid2} = Match,
-              P1 = {0, 0},
-              P2 = {0, 0},
+              P1 = {100,400},
+              P2 = {700,400},
               V = {0, 0},
               A = {0, 0},
               Ps = 5,

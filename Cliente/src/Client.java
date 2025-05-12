@@ -26,11 +26,11 @@ public class Client extends PApplet {
             try {
                 while (true) {
                     String response = vars.in.readLine();
-                    System.out.println("Received: " + response);
+                    //System.out.println("Received: " + response);
                     response = response.replace("\\\"", "\"");
                     response = response.replaceFirst("\"", "");
                     response = response.replaceFirst("\"$", "");
-                    System.out.println(response);
+                    //System.out.println(response);
                     InputStream inputStream = new ByteArrayInputStream(response.getBytes());
 
                     // Parse the XML
@@ -43,7 +43,7 @@ public class Client extends PApplet {
 
                     // Get the root element
                     Element root = document.getDocumentElement();
-                    System.out.println("Root element: " + root.getTagName());
+                    //System.out.println("Root element: " + root.getTagName());
                     switch (root.getTagName()) {
                         case "reply":
                             String replyText = root.getAttribute("text");
@@ -105,8 +105,8 @@ public class Client extends PApplet {
                                 vars.px2 = Float.parseFloat(player2.getAttribute("x"));
                                 vars.py2 = Float.parseFloat(player2.getAttribute("y"));
                             }
-                            System.out.println("Player1: (" + vars.px1 + ", " + vars.py1 + ")");
-                            System.out.println("Player2: (" + vars.px2 + ", " + vars.py2 + ")");
+                            //System.out.println("Player1: (" + vars.px1 + ", " + vars.py1 + ")");
+                            //System.out.println("Player2: (" + vars.px2 + ", " + vars.py2 + ")");
                             break;
                         default:
                             break;
@@ -345,9 +345,12 @@ public class Client extends PApplet {
     }
 
     private void drawGamePage(){
-        fill(255);
+        fill(0,0,255);
         ellipse(vars.px1, vars.py1, 50,50);
-        ellipse(vars.px2 + 1, vars.py2, 50,50);
+        fill(255,0,0);
+        ellipse(vars.px2, vars.py2, 50,50);
+        fill(0);
+
     }
 
 
@@ -464,6 +467,7 @@ public class Client extends PApplet {
                 vars.out.flush();
             }
         }
+
     }
 
     public void keyPressed() {
@@ -489,6 +493,27 @@ public class Client extends PApplet {
                 }
                 println("Password: " + vars.password);
             }
+        }
+        if (vars.currentScene.equals("GamePage")) {
+            float ax = 0, ay = 0;
+            if (key == 'w' || key == 'W'){
+                System.out.println("Botão de movimento clicado " + key);
+                ay = -0.5f;
+            }
+            if (key == 's' || key == 'S'){
+                System.out.println("Botão de movimento clicado " + key);
+                ay = 0.5f;
+            }
+            if (key == 'a' || key == 'A'){
+                System.out.println("Botão de movimento clicado " + key);
+                ax = -0.5f;
+            }
+            if (key == 'd' || key == 'D') {
+                System.out.println("Botão de movimento clicado " + key);
+                ax = 0.5f;
+            }
+            vars.out.println("/m " + ax + " " + ay);
+            vars.out.flush();
         }
     }
 
