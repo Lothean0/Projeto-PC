@@ -22,13 +22,14 @@ loop(Rooms, Rid, Waiting) ->
           case lists:filter(fun({_, Lv2, _}) -> abs(Lv2 - Lv) =< 1 end, Waiting) of
             [Match | _] ->
               {User2, Lv2, SPid2} = Match,
-              P = {0, 0},
+              P1 = {0, 0},
+              P2 = {0, 0},
               V = {0, 0},
               A = {0, 0},
               Ps = 5,
               Pi = 5,
               Pt = 0,
-              NewRoom = {Rid, [{User, Lv, SPid, {P, V, A, Ps, Pi, Pt}}, {User2, Lv2, SPid2, {P, V, A, Ps, Pi, Pt}}]},
+              NewRoom = {Rid, [{User, Lv, SPid, {P1, V, A, Ps, Pi, Pt}}, {User2, Lv2, SPid2, {P2, V, A, Ps, Pi, Pt}}]},
               NewRooms = maps:put(Rid, NewRoom, Rooms),
               NewWaiting = lists:delete(Match, Waiting),
               io:format("Test.~n"),

@@ -30,7 +30,7 @@ user_logged_out(Sock) ->
             ok ->
               send_message(Sock, {reply, "Account created successfully"}),
               user_logged_out(Sock);
-            {error, user_exists} ->
+            user_exists ->
               %% User already exists
               send_message(Sock, {reply, "User already exists"}),
               user_logged_out(Sock)
@@ -145,8 +145,10 @@ format_XMl(Data) ->
     {gamedata, {P1, P2}} ->
       {P1x, P1y} = P1,
       {P2x, P2y} = P2,
-      XML_Data = {gamedata,[{player1, [{position, [{x, P1x}, {y, P1y}]}]},
-                      {player2, [{position, [{x, P2x}, {y, P2y}]}]}], []},
+      XML_Data = {gamedata, [
+        {player1, [{x, integer_to_list(P1x)}, {y, integer_to_list(P1y)}], []},
+        {player2, [{x, integer_to_list(P2x)}, {y, integer_to_list(P2y)}], []}
+      ]},
       XML=lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
       XML;
     {reply, Text} ->

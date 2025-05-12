@@ -26,9 +26,10 @@ public class Client extends PApplet {
             try {
                 while (true) {
                     String response = vars.in.readLine();
-                    response = response.replaceFirst("^[^<]+", "");
+                    System.out.println("Received: " + response);
                     response = response.replace("\\\"", "\"");
-                    response = response.replaceFirst("(</?\\w+[^>]*?/?>).*", "$1");
+                    response = response.replaceFirst("\"", "");
+                    response = response.replaceFirst("\"$", "");
                     System.out.println(response);
                     InputStream inputStream = new ByteArrayInputStream(response.getBytes());
 
@@ -72,7 +73,8 @@ public class Client extends PApplet {
                                 case "Searching for a match...":
                                     vars.searching = true;
                                     break;
-                                case "Match  found!":
+                                case "Match found!":
+                                    System.out.println("Match found!2");
                                     vars.searching = false;
                                     vars.currentScene = "GamePage";
                                     break;
@@ -90,9 +92,21 @@ public class Client extends PApplet {
                             vars.currentScene = "MatchPage";
                             System.out.println("Level: " + level);
                         case "gamedata":
-                            NodeList gameData = root.getElementsByTagName("game");
-                            for (int i = 0; i < gameData.getLength(); i++) {
+                            NodeList players = document.getElementsByTagName("player1");
+                            if (players.getLength() > 0) {
+                                Element player1 = (Element) players.item(0);
+                                vars.px1 = Float.parseFloat(player1.getAttribute("x"));
+                                vars.py1 = Float.parseFloat(player1.getAttribute("y"));
                             }
+
+                            players = document.getElementsByTagName("player2");
+                            if (players.getLength() > 0) {
+                                Element player2 = (Element) players.item(0);
+                                vars.px2 = Float.parseFloat(player2.getAttribute("x"));
+                                vars.py2 = Float.parseFloat(player2.getAttribute("y"));
+                            }
+                            System.out.println("Player1: (" + vars.px1 + ", " + vars.py1 + ")");
+                            System.out.println("Player2: (" + vars.px2 + ", " + vars.py2 + ")");
                             break;
                         default:
                             break;
@@ -172,6 +186,9 @@ public class Client extends PApplet {
                 break;
             case "MatchPage":
                 drawMatchPage();
+                break;
+            case "GamePage":
+                drawGamePage();
                 break;
 
             default:
@@ -327,8 +344,8 @@ public class Client extends PApplet {
         }
     }
 
-    private void GamePage(){
-        fill(0);
+    private void drawGamePage(){
+        fill(255);
         ellipse(vars.px1, vars.py1, 50,50);
         ellipse(vars.px2 + 1, vars.py2, 50,50);
     }
