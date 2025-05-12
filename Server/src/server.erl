@@ -94,6 +94,9 @@ user_logged_in(Sock, User) ->
           send_message(Sock, {reply,"Invalid command"}),
           user_logged_in(Sock, User)
       end;
+    already_in_queue ->
+      send_message(Sock, {reply,"You are already in the queue for a match."}),
+      user_logged_in(Sock, User);
     waiting ->
       send_message(Sock, {reply,"Searching for a match..."}),
       user_logged_in(Sock, User);

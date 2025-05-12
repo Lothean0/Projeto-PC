@@ -74,7 +74,7 @@ public class Client extends PApplet {
                                     break;
                                 case "Match  found!":
                                     vars.searching = false;
-                                    vars.currentScene = "MatchPage";
+                                    vars.currentScene = "GamePage";
                                     break;
                                 case "Invalid command":
                                     System.out.println("Invalid command");
@@ -119,6 +119,8 @@ public class Client extends PApplet {
         PrintWriter out;
         BufferedReader in;
         String Lvl;
+        float px1, py1;
+        float px2, py2;
 
         public Variables() {
             this.currentScene = "Menu";
@@ -129,6 +131,10 @@ public class Client extends PApplet {
             this.ignoreFirstClick = false;
             this.searching = false;
             this.Lvl = "";
+            this.px1 = 0;
+            this.py1 = 0;
+            this.px2 = 0;
+            this.py2 = 0;
             try {
                 this.socket = new Socket("127.0.0.1", Integer.parseInt("8000"));
                 this.in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
@@ -321,6 +327,13 @@ public class Client extends PApplet {
         }
     }
 
+    private void GamePage(){
+        fill(0);
+        ellipse(vars.px1, vars.py1, 50,50);
+        ellipse(vars.px2 + 1, vars.py2, 50,50);
+    }
+
+
     public void mousePressed() {
         if (vars.currentScene.equals("Menu")) {
             // Verifica clique no botão "Login"
@@ -331,6 +344,7 @@ public class Client extends PApplet {
                 vars.typingPassword = false;
                 vars.ignoreFirstClick = true;
             }
+
             // Verifica clique no botão "Criar Conta"
             else if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
                     mouseY > height / 2 + 40 && mouseY < height / 2 + 70) {
@@ -420,15 +434,14 @@ public class Client extends PApplet {
                 return;
             }
             // Botão de Logout
-            if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
-                    mouseY > height / 2 - 20 && mouseY < height / 2 + 10) {
-                vars.currentScene = "Menu";
-                vars.username = "";
-                vars.password = "";
+            if (mouseX > width / 2 - 50  && mouseX < width / 2 + 50 &&
+                    mouseY > height / 2 + 95 && mouseY < height / 2 + 125) {
+                vars.out.println("/q");
+                vars.out.flush();
             }
             // Botão de Match
             else if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
-                    mouseY > height / 2 + 40 && mouseY < height / 2 + 70) {
+                    mouseY > height / 2 + 55 && mouseY < height / 2 + 85) {
                 System.out.println("Botão Match clicado");
                 vars.out.println("/f");
                 vars.out.flush();
