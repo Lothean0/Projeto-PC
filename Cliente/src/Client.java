@@ -43,7 +43,7 @@ public class Client extends PApplet {
 
                     // Get the root element
                     Element root = document.getDocumentElement();
-                    //System.out.println("Root element: " + root.getTagName());
+                    System.out.println("Root element: " + root.getTagName());
                     switch (root.getTagName()) {
                         case "reply":
                             String replyText = root.getAttribute("text");
@@ -78,6 +78,10 @@ public class Client extends PApplet {
                                     vars.searching = false;
                                     vars.currentScene = "GamePage";
                                     break;
+                                case "You win!","You lose!","Draw!":
+                                    vars.out.println("/Lv");
+                                    vars.out.flush();
+                                    break;
                                 case "Invalid command":
                                     System.out.println("Invalid command");
                                     break;
@@ -91,6 +95,7 @@ public class Client extends PApplet {
                             vars.Lvl = level;
                             vars.currentScene = "MatchPage";
                             System.out.println("Level: " + level);
+                            break;
                         case "gamedata":
                             NodeList players = document.getElementsByTagName("player1");
                             if (players.getLength() > 0) {
@@ -105,6 +110,10 @@ public class Client extends PApplet {
                                 vars.px2 = Float.parseFloat(player2.getAttribute("x"));
                                 vars.py2 = Float.parseFloat(player2.getAttribute("y"));
                             }
+                            NodeList Clock = document.getElementsByTagName("clock");
+                            Element Clock1 = (Element) Clock.item(0);
+                            String time = Clock1.getAttribute("time");
+                            System.out.println("Clock: " + time);
                             //System.out.println("Player1: (" + vars.px1 + ", " + vars.py1 + ")");
                             //System.out.println("Player2: (" + vars.px2 + ", " + vars.py2 + ")");
                             break;

@@ -22,13 +22,13 @@ loop(Rooms, Rid, Waiting) ->
           case lists:filter(fun({_, Lv2, _}) -> abs(Lv2 - Lv) =< 1 end, Waiting) of
             [Match | _] ->
               {User2, Lv2, SPid2} = Match,
-              P1 = {100,400},
-              P2 = {700,400},
-              V = {0, 0},
-              A = {0, 0},
-              Ps = 5,
-              Pi = 5,
-              Pt = 0,
+              P1 = {100,400}, %% Player 1 position
+              P2 = {700,400}, %% Player 2 position
+              V = {0, 0}, %% Velocity
+              A = {0, 0}, %% Acceleration
+              Ps = 5, %% Projectiles Speed
+              Pi = 5, %% Projectiles Interval
+              Pt = 0, %% Points
               NewRoom = {Rid, [{User, Lv, SPid, {P1, V, A, Ps, Pi, Pt}}, {User2, Lv2, SPid2, {P2, V, A, Ps, Pi, Pt}}]},
               NewRooms = maps:put(Rid, NewRoom, Rooms),
               NewWaiting = lists:delete(Match, Waiting),

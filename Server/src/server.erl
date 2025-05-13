@@ -22,6 +22,9 @@ acceptor(LSock) ->
 
 user_logged_out(Sock) ->
   receive
+    {tcp_closed, Sock} ->
+      %% Handle socket closure
+      gen_tcp:close(Sock);
     {tcp, _, Data} ->
       io:format("Received data: ~p~n", [Data]),
       case string:tokens(Data, " ") of
@@ -64,6 +67,10 @@ user_logged_out(Sock) ->
 
 user_logged_in(Sock, User) ->
   receive
+    {tcp_closed, Sock} ->
+      %% Handle socket closure
+      loginManager:logout(User),
+      gen_tcp:close(Sock);
     {tcp, Sock, Data} ->
       io:format("Received data: ~p~n", [Data]),
       case string:tokens(string:trim(Data), " ") of
@@ -108,6 +115,9 @@ user_logged_in(Sock, User) ->
 
 match(MatchPid, Sock, User) ->
   receive
+    {tcp_closed, Sock} ->
+      loginManager:logout(User),
+      gen_tcp:close(Sock);
     {tcp, Sock, Data} ->
       CleanData = string:trim(Data), %% Trim the input
       case string:tokens(CleanData, " ") of
@@ -119,35 +129,41 @@ match(MatchPid, Sock, User) ->
           gen_tcp:send(Sock, "Invalid command")
       end,
       match(MatchPid, Sock, User);
-    {update, {P1,P2}} ->
+    {update, {P1,P2,Clock}} ->
       %% Update the position of the player
-      send_message(Sock, {gamedata, {P1, P2}}),
+      send_message(Sock, {gamedata, {P1, P2,Clock}}),
       match(MatchPid, Sock, User);
     {error, Msg} ->
       %% Handle error messages
       gen_tcp:send(Sock, "Error: " ++ Msg ++ "\n"),
       match(MatchPid, Sock, User);
     win ->
-      io:format("Player ~p wins!~n", [User]),
-      gen_tcp:send(Sock, "You win!\n"),
+      send_message(Sock, {reply,"You win!"}),
       loginManager:win(User),
       user_logged_in(Sock, User);
     lose ->
-      io:format("Player ~p loses!~n", [User]),
-      gen_tcp:send(Sock, "You lose!\n"),
+      send_message(Sock, {reply,"You lose!"}),
       loginManager:lose(User),
-      user_logged_in(Sock, User)
+      user_logged_in(Sock, User);
+    draw ->
+      send_message(Sock, {reply,"Draw!"}),
+      user_logged_in(Sock, User);
+    Data ->
+      %% Handle other messages
+      io:format("Unknown message: ~p~n", [Data]),
+      match(MatchPid, Sock, User)
   end.
 
 
 format_XMl(Data) ->
   case Data of
-    {gamedata, {P1, P2}} ->
+    {gamedata, {P1, P2,Clock}} ->
       {P1x, P1y} = P1,
       {P2x, P2y} = P2,
       XML_Data = {gamedata, [
         {player1, [{x, float_to_list(float(P1x))}, {y, float_to_list(float(P1y))}], []},
-        {player2, [{x, float_to_list(float(P2x))}, {y, float_to_list(float(P2y))}], []}
+        {player2, [{x, float_to_list(float(P2x))}, {y, float_to_list(float(P2y))}], []},
+        {clock, [{time, integer_to_list(Clock)}], []}
       ]},
       XML=lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
       XML;
