@@ -4,7 +4,10 @@
 
 
 start(Port) ->
-  {ok, LSock} = gen_tcp:listen(Port, [{packet, line}, {reuseaddr, true}, {exit_on_close, false}, {ip, any}]),
+  {ok, LSock} = gen_tcp:listen(Port, [{packet, line},
+                                                  {reuseaddr, true},
+                                                  {exit_on_close, false},
+                                                  {ip, any}]),
   io:format("Server started on port ~p~n", [Port]),
   loginManager:start(),
   matchmaker:start(),

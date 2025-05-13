@@ -27,6 +27,7 @@ loop(Players, StartTime) ->
   AccelX = 0.05,
   AccelY = 0.05,
   MaxAccel = 1.0,
+  MaxVel = 5.0,
 
   [{User1, Lv1, SPid1, {P1, V1, A1, Ps1, Pi1, Pt1}},
     {User2, Lv2, SPid2, {P2, V2, A2, Ps2, Pi2, Pt2}}] = Players,
@@ -64,8 +65,8 @@ loop(Players, StartTime) ->
             SPid2 ! draw
         end;
         true ->
-          {NewP1, NewV1} = update_position_and_speed(P1, V1, A1),
-          {NewP2, NewV2} = update_position_and_speed(P2, V2, A2),
+          {NewP1, NewV1} = update_position_and_speed(P1, V1, A1,MaxVel),
+          {NewP2, NewV2} = update_position_and_speed(P2, V2, A2,MaxVel),
           NewPlayers = [
             {User1, Lv1, SPid1, {NewP1, NewV1, A1, Ps1, Pi1, Pt1}},
             {User2, Lv2, SPid2, {NewP2, NewV2, A2, Ps2, Pi2, Pt2}}
@@ -77,8 +78,7 @@ loop(Players, StartTime) ->
       end
   end.
 
-update_position_and_speed({Px, Py}, {Vx, Vy}, {Ax, Ay}) ->
-  MaxVel = 5.0,
+update_position_and_speed({Px, Py}, {Vx, Vy}, {Ax, Ay},MaxVel) ->
 
   %% Update speed
   TempVx = Vx + Ax,
