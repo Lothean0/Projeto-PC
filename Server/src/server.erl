@@ -26,7 +26,7 @@ user_logged_out(Sock) ->
       %% Handle socket closure
       gen_tcp:close(Sock);
     {tcp, _, Data} ->
-      io:format("Received data: ~p~n", [Data]),
+      %%io:format("Received data: ~p~n", [Data]),
       case string:tokens(Data, " ") of
         ["/cr", User, Pass] ->
           case loginManager:create_account(User, Pass) of
@@ -72,7 +72,7 @@ user_logged_in(Sock, User) ->
       loginManager:logout(User),
       gen_tcp:close(Sock);
     {tcp, Sock, Data} ->
-      io:format("Received data: ~p~n", [Data]),
+      %%io:format("Received data: ~p~n", [Data]),
       case string:tokens(string:trim(Data), " ") of
         ["/f"] ->
           %% Send a message to the matchmaker process
@@ -110,7 +110,10 @@ user_logged_in(Sock, User) ->
     {match_found, MatchPid} ->
       send_message(Sock, {reply,"Match found!"}),
       MatchPid ! {connect, User, self()},
-      match(MatchPid, Sock, User)
+      %%receive
+      %%  connected ->
+          match(MatchPid, Sock, User)
+      %%end
   end.
 
 match(MatchPid, Sock, User) ->
@@ -121,17 +124,17 @@ match(MatchPid, Sock, User) ->
     {tcp, Sock, Data} ->
       CleanData = string:trim(Data), %% Trim the input
       case string:tokens(CleanData, " ") of
-        ["/m", Ax, Ay] ->
+        ["/m", Key] ->
           %% Send move command to the match process
-          MatchPid ! {move, User, list_to_float(Ax), list_to_float(Ay), self()};
+          MatchPid ! {move, User, Key, self()};
         _ ->
           %% Handle invalid input
           gen_tcp:send(Sock, "Invalid command")
       end,
       match(MatchPid, Sock, User);
-    {update, {P1,P2,Clock}} ->
+    {update, {P1, P2, Pt1, Pt2, Clock}} ->
       %% Update the position of the player
-      send_message(Sock, {gamedata, {P1, P2,Clock}}),
+      send_message(Sock, {gamedata, {P1, P2, Pt1, Pt2, Clock}}),
       match(MatchPid, Sock, User);
     {error, Msg} ->
       %% Handle error messages
@@ -157,12 +160,12 @@ match(MatchPid, Sock, User) ->
 
 format_XMl(Data) ->
   case Data of
-    {gamedata, {P1, P2,Clock}} ->
+    {gamedata, {P1, P2, Pt1, Pt2, Clock}} ->
       {P1x, P1y} = P1,
       {P2x, P2y} = P2,
       XML_Data = {gamedata, [
-        {player1, [{x, float_to_list(float(P1x))}, {y, float_to_list(float(P1y))}], []},
-        {player2, [{x, float_to_list(float(P2x))}, {y, float_to_list(float(P2y))}], []},
+        {player1, [{x, float_to_list(float(P1x))}, {y, float_to_list(float(P1y))}, {score, integer_to_list(Pt1)}], []},
+        {player2, [{x, float_to_list(float(P2x))}, {y, float_to_list(float(P2y))}, {score, integer_to_list(Pt2)}], []},
         {clock, [{time, integer_to_list(Clock)}], []}
       ]},
       XML=lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),

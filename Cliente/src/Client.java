@@ -26,11 +26,11 @@ public class Client extends PApplet {
             try {
                 while (true) {
                     String response = vars.in.readLine();
-                    //System.out.println("Received: " + response);
+                    // System.out.println("Received: " + response);
                     response = response.replace("\\\"", "\"");
                     response = response.replaceFirst("\"", "");
                     response = response.replaceFirst("\"$", "");
-                    //System.out.println(response);
+                    System.out.println(response);
                     InputStream inputStream = new ByteArrayInputStream(response.getBytes());
 
                     // Parse the XML
@@ -102,6 +102,7 @@ public class Client extends PApplet {
                                 Element player1 = (Element) players.item(0);
                                 vars.px1 = Float.parseFloat(player1.getAttribute("x"));
                                 vars.py1 = Float.parseFloat(player1.getAttribute("y"));
+                                vars.pt1 = Integer.parseInt(player1.getAttribute("score"));
                             }
 
                             players = document.getElementsByTagName("player2");
@@ -109,11 +110,14 @@ public class Client extends PApplet {
                                 Element player2 = (Element) players.item(0);
                                 vars.px2 = Float.parseFloat(player2.getAttribute("x"));
                                 vars.py2 = Float.parseFloat(player2.getAttribute("y"));
+                                vars.pt2 = Integer.parseInt(player2.getAttribute("score"));
                             }
                             NodeList Clock = document.getElementsByTagName("clock");
                             Element Clock1 = (Element) Clock.item(0);
                             String time = Clock1.getAttribute("time");
                             System.out.println("Clock: " + time);
+
+
                             //System.out.println("Player1: (" + vars.px1 + ", " + vars.py1 + ")");
                             //System.out.println("Player2: (" + vars.px2 + ", " + vars.py2 + ")");
                             break;
@@ -144,6 +148,7 @@ public class Client extends PApplet {
         String Lvl;
         float px1, py1;
         float px2, py2;
+        int pt1, pt2;
 
         public Variables() {
             this.currentScene = "Menu";
@@ -156,8 +161,10 @@ public class Client extends PApplet {
             this.Lvl = "";
             this.px1 = 0;
             this.py1 = 0;
+            this.pt1 = 0;
             this.px2 = 0;
             this.py2 = 0;
+            this.pt2 = 0;
             try {
                 this.socket = new Socket("127.0.0.1", Integer.parseInt("8000"));
                 this.in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
@@ -504,27 +511,7 @@ public class Client extends PApplet {
             }
         }
         if (vars.currentScene.equals("GamePage")) {
-            float ax = 0, ay = 0;
-
-            switch (Character.toLowerCase(key)) {
-                case 'w':
-                    System.out.println("Botão de movimento clicado " + key);
-                    ay = -0.5f;
-                    break;
-                case 's':
-                    System.out.println("Botão de movimento clicado " + key);
-                    ay = 0.5f;
-                    break;
-                case 'a':
-                    System.out.println("Botão de movimento clicado " + key);
-                    ax = -0.5f;
-                    break;
-                case 'd':
-                    System.out.println("Botão de movimento clicado " + key);
-                    ax = 0.5f;
-                    break;
-            }
-            vars.out.println("/m " + ax + " " + ay);
+            vars.out.println("/m " + Character.toLowerCase(key));
             vars.out.flush();
         }
     }

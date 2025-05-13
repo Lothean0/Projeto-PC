@@ -21,79 +21,92 @@ connector(Players) ->
       end
   end.
 
-loop(Players,StartTime) ->
-  Duration = 10000, %% 2 minutes
+loop(Players, StartTime) ->
+  Duration = 10000,
+  Tickrate = 10,
+  AccelX = 0.05,
+  AccelY = 0.05,
+  MaxAccel = 1.0,
+
   [{User1, Lv1, SPid1, {P1, V1, A1, Ps1, Pi1, Pt1}},
     {User2, Lv2, SPid2, {P2, V2, A2, Ps2, Pi2, Pt2}}] = Players,
+
   receive
-    {move, User, Ax, Ay, Pid} ->
-      %%io:format("User: ~p, ~nUser1: ~p, ~nUser2: ~p, ~nAx: ~p, ~nAy: ~p, ~nPid: ~p~nSPid1: ~p, ~nSPid2: ~p~n", [User, User1, User2, Ax, Ay, Pid, SPid1, SPid2]),
-      case User of
-        User1 ->
-          if Pid == SPid1 ->
-            NewA1 = {Ax, Ay},
-            loop([{User1, Lv1, SPid1, {P1, V1, NewA1, Ps1, Pi1, Pt1}},
-              {User2, Lv2, SPid2, {P2, V2, A2, Ps2, Pi2, Pt2}}],StartTime);
-            true ->
-              %% Invalid user
-              Pid ! {error, "Invalid user"},
-              loop(Players,StartTime)
-          end;
-        User2 ->
-          if Pid == SPid2 ->
-            %% Update acceleration for User2
-            NewA2 = {Ax, Ay},
-            loop([{User1, Lv1, SPid1, {P1, V1, A1, Ps1, Pi1, Pt1}},
-              {User2, Lv2, SPid2, {P2, V2, NewA2, Ps2, Pi2, Pt2}}],StartTime);
-            true ->
-              %% Invalid user
-              Pid ! {error, "Invalid user"},
-              loop(Players,StartTime)
-          end;
+    {move, User, Key, Pid} ->
+      case {User, Pid} of
+        {User1, SPid1} ->
+          NewA1 = update_accel(Key, A1, {AccelX, AccelY}, MaxAccel),
+          loop([{User1, Lv1, SPid1, {P1, V1, NewA1, Ps1, Pi1, Pt1}},
+            {User2, Lv2, SPid2, {P2, V2, A2, Ps2, Pi2, Pt2}}], StartTime);
+
+        {User2, SPid2} ->
+          NewA2 = update_accel(Key, A2, {AccelX, AccelY}, MaxAccel),
+          loop([{User1, Lv1, SPid1, {P1, V1, A1, Ps1, Pi1, Pt1}},
+            {User2, Lv2, SPid2, {P2, V2, NewA2, Ps2, Pi2, Pt2}}], StartTime);
+
         _ ->
-          %% Invalid user
-          loop(Players,StartTime)
+          Pid ! {error, "Invalid user"},
+          loop(Players, StartTime)
       end;
+
     tick ->
       Clock = erlang:monotonic_time(millisecond) - StartTime,
       io:format("Clock: ~p, StartTime: ~p, Duration: ~p~n", [Clock, StartTime, Duration]),
-      %% Check if time is up
       if Clock > Duration ->
-        %% Time is up, end the match
         if Pt1 > Pt2 ->
-          %% User1 wins
           SPid1 ! win,
           SPid2 ! lose;
           Pt2 > Pt1 ->
-          %% User2 wins
-          SPid1 ! lose,
-          SPid2 ! win;
+            SPid1 ! lose,
+            SPid2 ! win;
           true ->
-          %% Draw
-          SPid1 ! draw,
-          SPid2 ! draw
+            SPid1 ! draw,
+            SPid2 ! draw
         end;
         true ->
-          %% Update position and speed for both players
           {NewP1, NewV1} = update_position_and_speed(P1, V1, A1),
           {NewP2, NewV2} = update_position_and_speed(P2, V2, A2),
           NewPlayers = [
             {User1, Lv1, SPid1, {NewP1, NewV1, A1, Ps1, Pi1, Pt1}},
             {User2, Lv2, SPid2, {NewP2, NewV2, A2, Ps2, Pi2, Pt2}}
           ],
-          SPid1 ! {update, {NewP1, NewP2,Clock}},
-          SPid2 ! {update, {NewP2, NewP1,Clock}},
-          %% Schedule the next tick
-          timer:send_after(100, self(), tick),
-          loop(NewPlayers,StartTime)
+          SPid1 ! {update, {NewP1, NewP2, Pt1, Pt2, Clock}},
+          SPid2 ! {update, {NewP2, NewP1, Pt2, Pt1, Clock}},
+          timer:send_after(Tickrate, self(), tick),
+          loop(NewPlayers, StartTime)
       end
   end.
 
 update_position_and_speed({Px, Py}, {Vx, Vy}, {Ax, Ay}) ->
+  MaxVel = 5.0,
+
   %% Update speed
-  NewVx = Vx + Ax,
-  NewVy = Vy + Ay,
+  TempVx = Vx + Ax,
+  TempVy = Vy + Ay,
+
+  %% Clamp speed
+  ClampedVx = max(min(TempVx, MaxVel), -MaxVel),
+  ClampedVy = max(min(TempVy, MaxVel), -MaxVel),
+
   %% Update position
-  NewPx = Px + NewVx,
-  NewPy = Py + NewVy,
-  {{NewPx, NewPy}, {NewVx, NewVy}}.
+  NewPx = Px + ClampedVx,
+  NewPy = Py + ClampedVy,
+
+  %%io:format("Ax ~p |Ay ~p~n", [Ax, Ay]),
+  %%io:format("Vx ~p |Vy ~p~n", [ClampedVx, ClampedVy]),
+  %%io:format("Px ~p |Py ~p~n", [NewPx, NewPy]),
+
+  {{NewPx, NewPy}, {ClampedVx, ClampedVy}}.
+
+update_accel(Key, {Ax, Ay}, {AccelX, AccelY}, Max) ->
+  case Key of
+    "w" -> {Ax, clamp(Ay - AccelY, -Max, Max)};
+    "s" -> {Ax, clamp(Ay + AccelY, -Max, Max)};
+    "a" -> {clamp(Ax - AccelX, -Max, Max), Ay};
+    "d" -> {clamp(Ax + AccelX, -Max, Max), Ay};
+    _   -> {Ax, Ay}
+  end.
+
+clamp(Value, Min, _Max) when Value < Min -> Min;
+clamp(Value, _Min, Max) when Value > Max -> Max;
+clamp(Value, _, _) -> Value.
