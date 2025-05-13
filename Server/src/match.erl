@@ -24,8 +24,8 @@ connector(Players) ->
 loop(Players, StartTime) ->
   Duration = 10000,
   Tickrate = 10,
-  AccelX = 0.05,
-  AccelY = 0.05,
+  AccelX = 0.1,
+  AccelY = 0.1,
   MaxAccel = 1.0,
   MaxVel = 5.0,
 
@@ -100,10 +100,34 @@ update_position_and_speed({Px, Py}, {Vx, Vy}, {Ax, Ay},MaxVel) ->
 
 update_accel(Key, {Ax, Ay}, {AccelX, AccelY}, Max) ->
   case Key of
-    "w" -> {Ax, clamp(Ay - AccelY, -Max, Max)};
-    "s" -> {Ax, clamp(Ay + AccelY, -Max, Max)};
-    "a" -> {clamp(Ax - AccelX, -Max, Max), Ay};
-    "d" -> {clamp(Ax + AccelX, -Max, Max), Ay};
+    "w" ->
+      if
+        Ay < 0 ->
+          {Ax, clamp(Ay - AccelY, -Max, Max)};
+        true ->
+          {Ax, clamp(0 - AccelY, -Max, Max)}
+      end;
+    "s" ->
+      if
+        Ay > 0 ->
+          {Ax, clamp(Ay + AccelY, -Max, Max)};
+        true ->
+          {Ax, clamp(0 + AccelY, -Max, Max)}
+      end;
+    "a" ->
+      if
+        Ax < 0 ->
+          {clamp(Ax - AccelX, -Max, Max), Ay};
+        true ->
+          {clamp(0 - AccelX, -Max, Max), Ay}
+      end;
+    "d" ->
+      if
+        Ax > 0 ->
+          {clamp(Ax + AccelX, -Max, Max), Ay};
+        true ->
+          {clamp(0 + AccelX, -Max, Max), Ay}
+      end;
     _   -> {Ax, Ay}
   end.
 
