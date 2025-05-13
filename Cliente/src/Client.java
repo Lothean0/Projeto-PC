@@ -491,7 +491,7 @@ public class Client extends PApplet {
                     vars.typingPassword = true;
                 }
                 println("Username: " + vars.username);
-            } else {
+            } else if (vars.typingPassword) {
                 if (key == BACKSPACE && !vars.password.isEmpty()) {
                     vars.password = vars.password.substring(0, vars.password.length() - 1);
                 } else if (key != BACKSPACE && key != ENTER && key != TAB && key != CODED) {
@@ -505,21 +505,24 @@ public class Client extends PApplet {
         }
         if (vars.currentScene.equals("GamePage")) {
             float ax = 0, ay = 0;
-            if (key == 'w' || key == 'W'){
-                System.out.println("Botão de movimento clicado " + key);
-                ay = -0.5f;
-            }
-            if (key == 's' || key == 'S'){
-                System.out.println("Botão de movimento clicado " + key);
-                ay = 0.5f;
-            }
-            if (key == 'a' || key == 'A'){
-                System.out.println("Botão de movimento clicado " + key);
-                ax = -0.5f;
-            }
-            if (key == 'd' || key == 'D') {
-                System.out.println("Botão de movimento clicado " + key);
-                ax = 0.5f;
+
+            switch (Character.toLowerCase(key)) {
+                case 'w':
+                    System.out.println("Botão de movimento clicado " + key);
+                    ay = -0.5f;
+                    break;
+                case 's':
+                    System.out.println("Botão de movimento clicado " + key);
+                    ay = 0.5f;
+                    break;
+                case 'a':
+                    System.out.println("Botão de movimento clicado " + key);
+                    ax = -0.5f;
+                    break;
+                case 'd':
+                    System.out.println("Botão de movimento clicado " + key);
+                    ax = 0.5f;
+                    break;
             }
             vars.out.println("/m " + ax + " " + ay);
             vars.out.flush();
