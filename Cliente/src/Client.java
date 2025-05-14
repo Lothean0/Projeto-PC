@@ -25,12 +25,12 @@ public class Client extends PApplet {
         public void run() {
             try {
                 while (true) {
-                    String response = vars.in.readLine();
-                    // System.out.println("Received: " + response);
+                    String response = vars.in.readLine().trim();
+                    //System.out.println("Received: " + response);
                     response = response.replace("\\\"", "\"");
                     response = response.replaceFirst("\"", "");
                     response = response.replaceFirst("\"$", "");
-                    System.out.println(response);
+                    //System.out.println(response);
                     InputStream inputStream = new ByteArrayInputStream(response.getBytes());
 
                     // Parse the XML
@@ -497,8 +497,13 @@ public class Client extends PApplet {
             }
         }
         if (vars.currentScene.equals("GamePage")) {
-            vars.out.println("/m " + Character.toLowerCase(key));
-            vars.out.flush();
+            if(key ==' '){
+                vars.out.println("/m space");
+                vars.out.flush();
+            }else {
+                vars.out.println("/m " + Character.toLowerCase(key));
+                vars.out.flush();
+            }
         }
     }
 

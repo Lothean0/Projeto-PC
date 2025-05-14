@@ -4,18 +4,16 @@
 -export([start/1]).
 
 start(Room) ->
-  io:format("Test2.~n"),
+  %%:format("Test2.~n"),
   {_Rid, Players} = Room,
   Pid = spawn(fun() -> connector(Players) end),
   Pid.
 
 connector(Players) ->
   receive
-    {connect, User1, Pid1} ->
+    {connect, _User1, _Pid1} ->
       receive
-      {connect, User2, Pid2} ->
-        Pid1 ! {connected, User1},
-        Pid2 ! {connected, User2},
+      {connect, _User2, _Pid2} ->
         self() ! tick,
         %% get the initial position of the players
         [Player1, Player2] = Players,
@@ -30,9 +28,8 @@ connector(Players) ->
 loop(Players, StartTime,Spawn) ->
   Duration = 120000,
   Tickrate = 10,
-  AccelX = 0.1,
-  AccelY = 0.1,
-  MaxAccel = 1.0,
+  AccelX = 0.25,
+  AccelY = 0.25,
   MaxVel = 5.0,
   MinPx = 0,
   MinPy = 0,
@@ -47,12 +44,11 @@ loop(Players, StartTime,Spawn) ->
     {move, User, Key, Pid} ->
       case {User, Pid} of
         {User1, SPid1} ->
-          NewA1 = update_accel(Key, A1, {AccelX, AccelY}, MaxAccel),
+          NewA1 = update_accel(Key,{AccelX, AccelY}),
           loop([{User1, Lv1, SPid1, {P1, V1, NewA1, Ps1, Pi1, Pt1}},
             {User2, Lv2, SPid2, {P2, V2, A2, Ps2, Pi2, Pt2}}], StartTime, Spawn);
-
         {User2, SPid2} ->
-          NewA2 = update_accel(Key, A2, {AccelX, AccelY}, MaxAccel),
+          NewA2 = update_accel(Key,{AccelX, AccelY}),
           loop([{User1, Lv1, SPid1, {P1, V1, A1, Ps1, Pi1, Pt1}},
             {User2, Lv2, SPid2, {P2, V2, NewA2, Ps2, Pi2, Pt2}}], StartTime, Spawn);
 
@@ -63,7 +59,7 @@ loop(Players, StartTime,Spawn) ->
 
     tick ->
       Clock = erlang:monotonic_time(millisecond) - StartTime,
-      io:format("Clock: ~p, StartTime: ~p, Duration: ~p~n", [Clock, StartTime, Duration]),
+      %%io:format("Clock: ~p, StartTime: ~p, Duration: ~p~n", [Clock, StartTime, Duration]),
       if Clock > Duration ->
         if Pt1 > Pt2 ->
           SPid1 ! win,
@@ -117,39 +113,13 @@ update_Pos_Vel_Col({Px, Py}, {Vx, Vy}, {Ax, Ay}, Pt, MaxVel, MinP,MaxP, Spawn) -
       {Pt, {{NewPx, NewPy}, {ClampedVx, ClampedVy}, {Ax, Ay}}}
   end.
 
-update_accel(Key, {Ax, Ay}, {AccelX, AccelY}, Max) ->
+update_accel(Key,{AccelX, AccelY}) ->
+  io:format("Key: ~p~n", [Key]),
   case Key of
-    "w" ->
-      if
-        Ay < 0 ->
-          {Ax, clamp(Ay - AccelY, -Max, Max)};
-        true ->
-          {Ax, clamp(0 - AccelY, -Max, Max)}
-      end;
-    "s" ->
-      if
-        Ay > 0 ->
-          {Ax, clamp(Ay + AccelY, -Max, Max)};
-        true ->
-          {Ax, clamp(0 + AccelY, -Max, Max)}
-      end;
-    "a" ->
-      if
-        Ax < 0 ->
-          {clamp(Ax - AccelX, -Max, Max), Ay};
-        true ->
-          {clamp(0 - AccelX, -Max, Max), Ay}
-      end;
-    "d" ->
-      if
-        Ax > 0 ->
-          {clamp(Ax + AccelX, -Max, Max), Ay};
-        true ->
-          {clamp(0 + AccelX, -Max, Max), Ay}
-      end;
-    _   -> {Ax, Ay}
+    "w" -> {0, -AccelY};
+    "s" -> {0, AccelY};
+    "a" -> {-AccelX, 0};
+    "d" -> {AccelX, 0};
+    "space" -> {0, 0};
+    _ -> {AccelX, AccelY}
   end.
-
-clamp(Value, Min, _Max) when Value < Min -> Min;
-clamp(Value, _Min, Max) when Value > Max -> Max;
-clamp(Value, _, _) -> Value.

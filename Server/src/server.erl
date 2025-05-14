@@ -120,11 +120,13 @@ user_logged_in(Sock, User) ->
   end.
 
 match(MatchPid, Sock, User) ->
+
   receive
     {tcp_closed, Sock} ->
       loginManager:logout(User),
       gen_tcp:close(Sock);
     {tcp, Sock, Data} ->
+      io:format("Received data: ~p~n", [Data]),
       CleanData = string:trim(Data), %% Trim the input
       case string:tokens(CleanData, " ") of
         ["/m", Key] ->
@@ -187,7 +189,7 @@ format_XMl(Data) ->
 
 send_message(Socket, Message) ->
   Response = format_XMl(Message),
-  io:format("Sending message: ~p~n", [Response]),
+  %%io:format("Sending message: ~p~n", [Response]),
   gen_tcp:send(Socket, io_lib:format("~p~n", [Response])).
 
 
