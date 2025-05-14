@@ -3,7 +3,6 @@
 %% API
 -export([create_account/2, close_account/2, login/3, logout/1, check_lv/1, win/1, lose/1, online/0, start/0]).
 
-% Client
 rpc(Request) ->
   ?MODULE ! {self(), Request},
   receive
@@ -19,10 +18,8 @@ win(User) -> rpc({win, User}).
 lose(User) -> rpc({lose, User}).
 online() -> rpc(online).
 
-% Server
 start() ->
-  Map = #{},
-  Logged_In = #{},
+  {Map, Logged_In} = load_state(),
   Pid = spawn(fun() -> loop(Map, Logged_In) end),
   register(?MODULE, Pid),
   Pid.
@@ -35,9 +32,9 @@ loop(Map, Logged_In) ->
           Pid ! user_exists,
           loop(Map, Logged_In);
         error ->
-          %% Add user with default level 1
           NewMap = maps:put(U, {P, 1, 0}, Map),
           Pid ! ok,
+          save_state(NewMap, Logged_In),
           loop(NewMap, Logged_In)
       end;
 
@@ -46,6 +43,7 @@ loop(Map, Logged_In) ->
         {ok, _} ->
           NewMap = maps:remove(U, Map),
           Pid ! ok,
+          save_state(NewMap, Logged_In),
           loop(NewMap, Logged_In);
         error ->
           Pid ! user_not_found,
@@ -62,6 +60,7 @@ loop(Map, Logged_In) ->
             false ->
               NewLogged_In = maps:put(U, Socket, Logged_In),
               Pid ! ok,
+              save_state(Map, NewLogged_In),
               loop(Map, NewLogged_In)
           end;
         {ok, _} ->
@@ -77,6 +76,7 @@ loop(Map, Logged_In) ->
         true ->
           NewLogged_In = maps:remove(U, Logged_In),
           Pid ! ok,
+          save_state(Map, NewLogged_In),
           loop(Map, NewLogged_In);
         false ->
           Pid ! user_not_logged_in,
@@ -104,6 +104,7 @@ loop(Map, Logged_In) ->
                        maps:put(U, {Pass, Lv, NewStreak}, Map)
                    end,
           Pid ! ok,
+          save_state(NewMap, Logged_In),
           loop(NewMap, Logged_In);
         error ->
           Pid ! user_not_found,
@@ -134,6 +135,7 @@ loop(Map, Logged_In) ->
                        end
                    end,
           Pid ! ok,
+          save_state(NewMap, Logged_In),
           loop(NewMap, Logged_In);
         error ->
           Pid ! user_not_found,
@@ -143,4 +145,17 @@ loop(Map, Logged_In) ->
     {Pid, online} ->
       Pid ! Logged_In,
       loop(Map, Logged_In)
+  end.
+
+save_state(Map, Logged_In) ->
+  State = {Map, Logged_In},
+  file:write_file("state.dat", term_to_binary(State)).
+
+load_state() ->
+  case file:read_file("state.dat") of
+    {ok, Binary} ->
+      {Map, Logged_In} = binary_to_term(Binary),
+      {Map, Logged_In};
+    _ ->
+      {#{}, #{}}
   end.
