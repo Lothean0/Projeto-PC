@@ -26,4 +26,4 @@ if errorlevel 1 (
 echo Compilation successful. Starting the server...
 
 REM Start the Erlang VM and run the server
-erl -pa "%BIN_DIR%" -noshell -eval "server:start(8000), timer:sleep(infinity)."
+erl -pa "%BIN_DIR%" -eval "server:start(8000), timer:sleep(infinity)."

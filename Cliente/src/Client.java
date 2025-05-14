@@ -177,13 +177,16 @@ public class Client extends PApplet {
     }
 
     Variables vars = new Variables();
-
+    int baseWidth = 800;
+    int baseHeight = 800;
     public void settings() {
-        size(800, 800);
+        size(baseWidth, baseHeight);
     }
 
     public void setup() {
+        size(800, 800);
         smooth();
+        surface.setResizable(true);
         textSize(16);
         textAlign(CENTER, CENTER);
         Thread readerThread = new Thread(new Reader(vars));
@@ -206,7 +209,6 @@ public class Client extends PApplet {
             case "GamePage":
                 drawGamePage();
                 break;
-
             default:
                 drawMenu();
                 break;
@@ -216,174 +218,162 @@ public class Client extends PApplet {
     private void drawMenu() {
         fill(255);
         textSize(32);
-        text("Menu", (float) width / 2, (float) height / 2 - 70);
+        text("Menu", width * 0.5f, height * 0.4f);
         textSize(16);
 
-        // Botão de Login
         fill(100, 200, 100);
-        rect((float) width / 2 - 50, (float) height / 2 - 20, 100, 30, 10);
+        rect(width * 0.4f, height * 0.45f, width * 0.2f, height * 0.05f, 10);
         fill(0);
-        text("Login", (float) width / 2, (float) height / 2 - 6);
+        text("Login", width * 0.5f, height * 0.475f);
 
-        // Botão de Criar Conta
         fill(100, 200, 100);
-        rect((float) width / 2 - 50, (float) height / 2 + 40, 100, 30, 10);
+        rect(width * 0.4f, height * 0.55f, width * 0.2f, height * 0.05f, 10);
         fill(0);
-        text("Criar Conta", (float) width / 2, (float) height / 2 + 55);
+        text("Criar Conta", width * 0.5f, height * 0.575f);
     }
 
     private void drawLogin() {
         fill(255);
         textSize(32);
-        text("Login", (float) width / 2, (float) height / 2 - 130);
+        text("Login", width * 0.5f, height * 0.3f);
         textSize(16);
 
-        // Caixa de username
+        // Username box
         fill(vars.typingUsername ? 200 : 150);
-        rect((float) width / 2 - 100, (float) height / 2 - 70, 200, 30, 10);
+        rect(width * 0.35f, height * 0.4f, width * 0.3f, height * 0.05f, 10);
         fill(0);
-        textAlign(LEFT, CENTER);
-        text(vars.username, (float) width / 2 - 95, (float) height / 2 - 55);
-        textAlign(CENTER, CENTER);
+        if (vars.username.isEmpty()) {
+            fill(100); // Darker faded-out color
+            textAlign(CENTER, CENTER);
+            text("Enter username", width * 0.5f, height * 0.425f);
+        } else {
+            fill(0);
+            text(vars.username, width * 0.5f, height * 0.425f);
+        }
 
-        // Label para username
-        fill(255);
-        textAlign(LEFT, BOTTOM);
-        text("Username:", (float) width / 2 - 100, (float) height / 2 - 75);
-        textAlign(CENTER, CENTER);
-
-        // Caixa de password
+        // Password box
         fill(vars.typingPassword ? 200 : 150);
-        rect((float) width / 2 - 100, (float) height / 2 - 10, 200, 30, 10);
+        rect(width * 0.35f, height * 0.5f, width * 0.3f, height * 0.05f, 10);
         fill(0);
-        textAlign(LEFT, CENTER);
-        // Mostrar asteriscos para a senha
-        text("*".repeat(vars.password.length()), (float) width / 2 - 95, (float) height / 2 + 5);
-        textAlign(CENTER, CENTER);
+        if (vars.password.isEmpty()) {
+            fill(100); // Darker faded-out color
+            textAlign(CENTER, CENTER);
+            text("Enter password", width * 0.5f, height * 0.525f);
+        } else {
+            fill(0);
+            text("*".repeat(vars.password.length()), width * 0.5f, height * 0.525f);
+        }
 
-        // Label para password
-        fill(255);
-        textAlign(LEFT, BOTTOM);
-        text("Password:", (float) width / 2 - 100, (float) height / 2 - 15);
-        textAlign(CENTER, CENTER);
-
-        // Botão de login
+        // Login button
         fill(100, 200, 100);
-        rect((float) width / 2 - 50, (float) height / 2 + 40, 100, 30, 10);
+        rect(width * 0.4f, height * 0.6f, width * 0.2f, height * 0.05f, 10);
         fill(0);
-        text("Login", (float) width / 2, (float) height / 2 + 55);
+        text("Login", width * 0.5f, height * 0.625f);
 
-        // Botão de voltar
+        // Back button
         fill(200, 100, 100);
-        rect((float) width / 2 - 50, (float) height / 2 + 80, 100, 30, 10);
+        rect(width * 0.4f, height * 0.7f, width * 0.2f, height * 0.05f, 10);
         fill(0);
-        text("Voltar", (float) width / 2, (float) height / 2 + 95);
-
-
+        text("Voltar", width * 0.5f, height * 0.725f);
     }
 
     private void drawCreateAccount() {
         fill(255);
         textSize(32);
-        text("Criar Conta", (float) width / 2, (float) height / 2 - 130);
+        text("Criar Conta", width * 0.5f, height * 0.3f);
         textSize(16);
 
-        // Caixa de username
+        // Username box
         fill(vars.typingUsername ? 200 : 150);
-        rect((float) width / 2 - 100, (float) height / 2 - 70, 200, 30, 10);
+        rect(width * 0.35f, height * 0.4f, width * 0.3f, height * 0.05f, 10);
         fill(0);
-        textAlign(LEFT, CENTER);
-        text(vars.username, (float) width / 2 - 95, (float) height / 2 - 55);
-        textAlign(CENTER, CENTER);
+        if (vars.username.isEmpty()) {
+            fill(100); // Darker faded-out color
+            textAlign(CENTER, CENTER);
+            text("Enter username", width * 0.5f, height * 0.425f);
+        } else {
+            fill(0);
+            text(vars.username, width * 0.5f, height * 0.425f);
+        }
 
-        // Label para username
-        fill(255);
-        textAlign(LEFT, BOTTOM);
-        text("Username:", (float) width / 2 - 100, (float) height / 2 - 75);
-        textAlign(CENTER, CENTER);
-
-        // Caixa de password
+        // Password box
         fill(vars.typingPassword ? 200 : 150);
-        rect((float) width / 2 - 100, (float) height / 2 - 10, 200, 30, 10);
+        rect(width * 0.35f, height * 0.5f, width * 0.3f, height * 0.05f, 10);
         fill(0);
-        textAlign(LEFT, CENTER);
-        // Mostrar asteriscos para a senha
-        text("*".repeat(vars.password.length()), (float) width / 2 - 95, (float) height / 2 + 5);
-        textAlign(CENTER, CENTER);
+        if (vars.password.isEmpty()) {
+            fill(100); // Darker faded-out color
+            textAlign(CENTER, CENTER);
+            text("Enter password", width * 0.5f, height * 0.525f);
+        } else {
+            fill(0);
+            text("*".repeat(vars.password.length()), width * 0.5f, height * 0.525f);
+        }
 
-        // Label para password
-        fill(255);
-        textAlign(LEFT, BOTTOM);
-        text("Password:", (float) width / 2 - 100, (float) height / 2 - 15);
-        textAlign(CENTER, CENTER);
-
-        // Botão de criar conta
+        // Create Account button
         fill(100, 200, 100);
-        rect((float) width / 2 - 50, (float) height / 2 + 40, 100, 30, 10);
+        rect(width * 0.4f, height * 0.6f, width * 0.2f, height * 0.05f, 10);
         fill(0);
-        text("Criar Conta", (float) width / 2, (float) height / 2 + 55);
+        text("Criar Conta", width * 0.5f, height * 0.625f);
 
-        // Botão de voltar
+        // Back button
         fill(200, 100, 100);
-        rect((float) width / 2 - 50, (float) height / 2 + 80, 100, 30, 10);
+        rect(width * 0.4f, height * 0.7f, width * 0.2f, height * 0.05f, 10);
         fill(0);
-        text("Voltar", (float) width / 2, (float) height / 2 + 95);
-
+        text("Voltar", width * 0.5f, height * 0.725f);
     }
 
     private void drawMatchPage() {
-        fill(0);
-        textSize(32);
         fill(255);
-        text("User: " + vars.username, (float) width / 2, (float) height / 2 - 100);
-
+        textSize(32);
+        text("User: " + vars.username, width * 0.5f, height * 0.3f);
         textSize(16);
-        text("Level: " + vars.Lvl, (float) width / 2, (float) height / 2 - 60);
-        text("Vitorias: 0", (float) width / 2, (float) height / 2 - 30);
-        text("Derrotas: 0", (float) width / 2, (float) height / 2);
-        text("Streak de vitorias : 0", (float) width / 2, (float) height / 2 + 30);
+        text("Level: " + vars.Lvl, width * 0.5f, height * 0.35f);
 
-        // Botão de Logout
-        fill(200, 100, 100);
-        rect((float) width / 2 - 50, (float) height / 2 + 95, 100, 30, 10);
-        fill(0);
-        text("Logout", (float) width / 2, (float) height / 2 + 110);
-
-        // Botão de Match
         fill(100, 200, 100);
-        rect((float) width / 2 - 50, (float) height / 2 + 55, 100, 30, 10);
+        rect(width * 0.4f, height * 0.5f, width * 0.2f, height * 0.05f, 10);
         fill(0);
-        if (!vars.searching) {
-            text("Match", (float) width / 2, (float) height / 2 + 70);
-        } else {
-            text("Searching", (float) width / 2, (float) height / 2 + 70);
-        }
+        text(vars.searching ? "Searching" : "Match", width * 0.5f, height * 0.525f);
+
+        fill(200, 100, 100);
+        rect(width * 0.4f, height * 0.6f, width * 0.2f, height * 0.05f, 10);
+        fill(0);
+        text("Logout", width * 0.5f, height * 0.625f);
     }
 
-    private void drawGamePage(){
-        fill(0,0,255);
-        ellipse(vars.px1, vars.py1, 50,50);
-        fill(255,0,0);
-        ellipse(vars.px2, vars.py2, 50,50);
-        fill(0);
+    private void drawGamePage() {
+        float scaleFactor = min((float) width / (float) baseWidth, (float) height / (float) baseHeight);
 
+        pushMatrix();
+        translate((width - baseWidth * scaleFactor) / 2, (height - baseHeight * scaleFactor) / 2); // Centering
+        scale(scaleFactor);
+
+        // Draw Player 1
+        fill(0, 0, 255);
+        ellipse(vars.px1, vars.py1, 50, 50);
+
+        // Draw Player 2
+        fill(255, 0, 0);
+        ellipse(vars.px2, vars.py2, 50, 50);
+
+        popMatrix();
     }
+
 
 
     public void mousePressed() {
         if (vars.currentScene.equals("Menu")) {
-            // Verifica clique no botão "Login"
-            if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
-                    mouseY > height / 2 - 20 && mouseY < height / 2 + 10) {
+            // Check "Login" button
+            if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
+                    mouseY > height * 0.45f && mouseY < height * 0.5f) {
                 vars.currentScene = "Login";
                 vars.typingUsername = false;
                 vars.typingPassword = false;
                 vars.ignoreFirstClick = true;
             }
 
-            // Verifica clique no botão "Criar Conta"
-            else if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
-                    mouseY > height / 2 + 40 && mouseY < height / 2 + 70) {
+            // Check "Create Account" button
+            else if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
+                    mouseY > height * 0.55f && mouseY < height * 0.6f) {
                 vars.currentScene = "CreateAccount";
                 vars.typingUsername = false;
                 vars.typingPassword = false;
@@ -393,97 +383,92 @@ public class Client extends PApplet {
 
         if (vars.currentScene.equals("Login")) {
             if (vars.ignoreFirstClick) {
-                vars.ignoreFirstClick = false; // Ignora o clique inicial
+                vars.ignoreFirstClick = false;
                 return;
             }
             vars.typingUsername = false;
             vars.typingPassword = false;
-            // Botão voltar
-            if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
-                    mouseY > height / 2 + 80 && mouseY < height / 2 + 110) {
+
+            // "Back" button
+            if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
+                    mouseY > height * 0.7f && mouseY < height * 0.75f) {
                 vars.currentScene = "Menu";
                 vars.username = "";
                 vars.password = "";
             }
-            // Botão login
-            else if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
-                    mouseY > height / 2 + 40 && mouseY < height / 2 + 70) {
-                // Lógica de login aqui
+            // "Login" button
+            else if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
+                    mouseY > height * 0.6f && mouseY < height * 0.65f) {
                 if (!vars.username.isEmpty() && !vars.password.isEmpty()) {
                     vars.out.println("/l " + vars.username + " " + vars.password);
                     vars.out.flush();
                 }
             }
-            // Caixa de username
-            else if (mouseX > width / 2 - 100 && mouseX < width / 2 + 120 &&
-                    mouseY > height / 2 - 60 && mouseY < height / 2 - 30) {
+            // Username box
+            else if (mouseX > width * 0.35f && mouseX < width * 0.65f &&
+                    mouseY > height * 0.4f && mouseY < height * 0.45f) {
                 vars.typingUsername = true;
-                println("Caixa de username ativada");
             }
-            // Caixa de password
-            else if (mouseX > width / 2 - 100 && mouseX < width / 2 + 120 &&
-                    mouseY > height / 2 - 10 && mouseY < height / 2 + 20) {
+            // Password box
+            else if (mouseX > width * 0.35f && mouseX < width * 0.65f &&
+                    mouseY > height * 0.5f && mouseY < height * 0.55f) {
                 vars.typingPassword = true;
-                println("Caixa de password ativada");
             }
         }
 
         if (vars.currentScene.equals("CreateAccount")) {
             if (vars.ignoreFirstClick) {
-                vars.ignoreFirstClick = false; // Ignora o clique inicial
+                vars.ignoreFirstClick = false;
                 return;
             }
             vars.typingUsername = false;
             vars.typingPassword = false;
-            // Botão voltar
-            if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
-                    mouseY > height / 2 + 80 && mouseY < height / 2 + 110) {
+
+            // "Back" button
+            if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
+                    mouseY > height * 0.7f && mouseY < height * 0.75f) {
                 vars.currentScene = "Menu";
                 vars.username = "";
                 vars.password = "";
             }
-            // Botão criar conta
-            else if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
-                    mouseY > height / 2 + 40 && mouseY < height / 2 + 70) {
+            // "Create Account" button
+            else if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
+                    mouseY > height * 0.6f && mouseY < height * 0.65f) {
                 if (!vars.username.isEmpty() && !vars.password.isEmpty()) {
                     vars.out.println("/cr " + vars.username + " " + vars.password);
                     vars.out.flush();
                 }
             }
-            // Caixa de username
-            else if (mouseX > width / 2 - 100 && mouseX < width / 2 + 100 &&
-                    mouseY > height / 2 - 60 && mouseY < height / 2 - 30) {
+            // Username box
+            else if (mouseX > width * 0.35f && mouseX < width * 0.65f &&
+                    mouseY > height * 0.4f && mouseY < height * 0.45f) {
                 vars.typingUsername = true;
-                println("Caixa de username ativada");
             }
-            // Caixa de password
-            else if (mouseX > width / 2 - 100 && mouseX < width / 2 + 100 &&
-                    mouseY > height / 2 - 10 && mouseY < height / 2 + 20) {
+            // Password box
+            else if (mouseX > width * 0.35f && mouseX < width * 0.65f &&
+                    mouseY > height * 0.5f && mouseY < height * 0.55f) {
                 vars.typingPassword = true;
-                println("Caixa de password ativada");
             }
         }
 
         if (vars.currentScene.equals("MatchPage")) {
             if (vars.ignoreFirstClick) {
-                vars.ignoreFirstClick = false; // Ignora o clique inicial
+                vars.ignoreFirstClick = false;
                 return;
             }
-            // Botão de Logout
-            if (mouseX > width / 2 - 50  && mouseX < width / 2 + 50 &&
-                    mouseY > height / 2 + 95 && mouseY < height / 2 + 125) {
+            // "Logout" button
+            if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
+                    mouseY > height * 0.6f && mouseY < height * 0.65f) {
                 vars.out.println("/q");
                 vars.out.flush();
             }
-            // Botão de Match
-            else if (mouseX > width / 2 - 50 && mouseX < width / 2 + 50 &&
-                    mouseY > height / 2 + 55 && mouseY < height / 2 + 85) {
-                System.out.println("Botão Match clicado");
+            // "Match" button
+            else if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
+                    mouseY > height * 0.5f && mouseY < height * 0.55f) {
                 vars.out.println("/f");
                 vars.out.flush();
             }
         }
-
     }
 
     public void keyPressed() {
