@@ -341,11 +341,12 @@ public class Client extends PApplet {
     }
 
     private void drawGamePage() {
-        float scaleFactor = min((float) width / (float) baseWidth, (float) height / (float) baseHeight);
+        float scaleFactorX = (float) width / baseWidth;
+        float scaleFactorY = (float) height / baseHeight;
 
         pushMatrix();
-        translate((width - baseWidth * scaleFactor) / 2, (height - baseHeight * scaleFactor) / 2); // Centering
-        scale(scaleFactor);
+        translate((width - baseWidth * scaleFactorX) / 2, (height - baseHeight * scaleFactorY) / 2);
+        scale(scaleFactorX, scaleFactorY);  // Scale the coordinate system
 
         // Draw Player 1
         fill(0, 0, 255);
