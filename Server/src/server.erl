@@ -120,7 +120,7 @@ user_logged_in(Sock, User) ->
       MatchPid ! {connect, User, self()},
       %%receive
       %%  connected ->
-          match(MatchPid, Sock, User)
+      match(MatchPid, Sock, User)
       %%end
   end.
 
@@ -154,12 +154,26 @@ match(MatchPid, Sock, User) ->
       send_message(Sock, {gamedata, {P1, P2, Pt1, Pt2, Pj1, Pj2, Clock}}),
       match(MatchPid, Sock, User);
     win ->
-      send_message(Sock, {reply,"You win!"}),
-      loginManager:win(User),
+      case loginManager:win(User) of
+        ok ->
+          %%io:format("User ~p won!~n", [User]),
+          send_message(Sock, {reply,"You win!"}),
+          user_logged_in(Sock, User);
+        _ ->
+          send_message(Sock, {reply,"Error updating win status"}),
+          user_logged_in(Sock, User)
+      end,
       user_logged_in(Sock, User);
     lose ->
-      send_message(Sock, {reply,"You lose!"}),
-      loginManager:lose(User),
+      case loginManager:lose(User) of
+        ok ->
+          %%io:format("User ~p lost!~n", [User]),
+          send_message(Sock, {reply,"You lose!"}),
+          user_logged_in(Sock, User);
+        _ ->
+          send_message(Sock, {reply,"Error updating lose status"}),
+          user_logged_in(Sock, User)
+      end,
       user_logged_in(Sock, User);
     draw ->
       send_message(Sock, {reply,"Draw!"}),
