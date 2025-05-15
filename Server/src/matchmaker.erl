@@ -26,10 +26,9 @@ loop(Rooms, Rid, Waiting) ->
               P2 = {700,400}, %% Player 2 position
               V = {0, 0}, %% Velocity
               A = {0, 0}, %% Acceleration
-              Ps = 5, %% Projectiles Speed
-              Pi = 5, %% Projectiles Interval
+              Pj = {5,1000,0,[]}, %% Projectiles speed, cooldown, lastshootime, list of projectiles
               Pt = 0, %% Points
-              NewRoom = {Rid, [{User, Lv, SPid, {P1, V, A, Ps, Pi, Pt}}, {User2, Lv2, SPid2, {P2, V, A, Ps, Pi, Pt}}]},
+              NewRoom = {Rid, [{User, Lv, SPid, {P1, V, A, Pj, Pt}}, {User2, Lv2, SPid2, {P2, V, A, Pj, Pt}}]},
               NewRooms = maps:put(Rid, NewRoom, Rooms),
               NewWaiting = lists:delete(Match, Waiting),
               io:format("Test.~n"),
@@ -43,6 +42,11 @@ loop(Rooms, Rid, Waiting) ->
               SPid ! waiting,
               loop(Rooms, Rid, NewWaiting)
           end
-      end
+      end;
+    {sPid,{stopsearching,User}} ->
+      %% Remove the user from the waiting list
+      NewWaiting = lists:filter(fun({U, _, _}) -> U =/= User end, Waiting),
+      sPid ! {stopedsearching, User},
+      loop(Rooms, Rid, NewWaiting)
   end.
 

@@ -1,6 +1,3 @@
-import java.io.*;
-import java.net.Socket;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -10,8 +7,14 @@ import processing.core.PApplet;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import java.util.logging.Logger;
+import java.io.*;
+import java.net.Socket;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 public class Client extends PApplet {
@@ -22,28 +25,30 @@ public class Client extends PApplet {
             this.vars = vars;
         }
 
+        public Element receiveMessage() throws IOException, ParserConfigurationException, SAXException {
+            String response = vars.in.readLine().trim();
+            //System.out.println("Received: " + response);
+            response = response.replace("\\\"", "\"");
+            response = response.replaceFirst("\"", "");
+            response = response.replaceFirst("\"$", "");
+            System.out.println(response);
+            InputStream inputStream = new ByteArrayInputStream(response.getBytes());
+
+            // Parse the XML
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document document = builder.parse(inputStream);
+
+            // Normalize the document
+            document.getDocumentElement().normalize();
+            return document.getDocumentElement();
+        }
+
         public void run() {
             try {
                 while (true) {
-                    String response = vars.in.readLine().trim();
-                    //System.out.println("Received: " + response);
-                    response = response.replace("\\\"", "\"");
-                    response = response.replaceFirst("\"", "");
-                    response = response.replaceFirst("\"$", "");
-                    //System.out.println(response);
-                    InputStream inputStream = new ByteArrayInputStream(response.getBytes());
-
-                    // Parse the XML
-                    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                    DocumentBuilder builder = factory.newDocumentBuilder();
-                    Document document = builder.parse(inputStream);
-
-                    // Normalize the document
-                    document.getDocumentElement().normalize();
-
-                    // Get the root element
-                    Element root = document.getDocumentElement();
-                    System.out.println("Root element: " + root.getTagName());
+                    Element root = receiveMessage();
+                    //System.out.println("Root element: " + root.getTagName());
                     switch (root.getTagName()) {
                         case "reply":
                             String replyText = root.getAttribute("text");
@@ -53,6 +58,21 @@ public class Client extends PApplet {
                                     System.out.println("Login successful");
                                     vars.out.println("/Lv");
                                     vars.out.flush();
+                                    Element newRoot1 = receiveMessage();
+                                    while(!Objects.equals(root.getTagName(), "checkLV")) {
+                                        if (newRoot1.getTagName().equals("checkLV")) {
+                                            String level = newRoot1.getAttribute("level");
+                                            vars.Lvl = level;
+                                            vars.currentScene = "MatchPage";
+                                            System.out.println("Level: " + level);
+                                            break;
+                                        }
+                                        else {
+                                            vars.out.println("/Lv");
+                                            vars.out.flush();
+                                            newRoot1 = receiveMessage();
+                                        }
+                                    }
                                     break;
                                 case "Account created successfully", "Account closed successfully",
                                      "Logged out successfully":
@@ -78,9 +98,24 @@ public class Client extends PApplet {
                                     vars.searching = false;
                                     vars.currentScene = "GamePage";
                                     break;
-                                case "You win!","You lose!","Draw!":
+                                case "You win!", "You lose!", "Draw!":
                                     vars.out.println("/Lv");
                                     vars.out.flush();
+                                    Element newRoot2 = receiveMessage();
+                                    while(!Objects.equals(root.getTagName(), "checkLV")) {
+                                        if (newRoot2.getTagName().equals("checkLV")) {
+                                            String level = newRoot2.getAttribute("level");
+                                            vars.Lvl = level;
+                                            vars.currentScene = "MatchPage";
+                                            System.out.println("Level: " + level);
+                                            break;
+                                        }
+                                        else {
+                                            vars.out.println("/Lv");
+                                            vars.out.flush();
+                                            newRoot2 = receiveMessage();
+                                        }
+                                    }
                                     break;
                                 case "Invalid command":
                                     System.out.println("Invalid command");
@@ -97,25 +132,49 @@ public class Client extends PApplet {
                             System.out.println("Level: " + level);
                             break;
                         case "gamedata":
-                            NodeList players = document.getElementsByTagName("player1");
+                            NodeList players = root.getElementsByTagName("player1");
                             if (players.getLength() > 0) {
                                 Element player1 = (Element) players.item(0);
                                 vars.px1 = Float.parseFloat(player1.getAttribute("x"));
                                 vars.py1 = Float.parseFloat(player1.getAttribute("y"));
                                 vars.pt1 = Integer.parseInt(player1.getAttribute("score"));
+                                NodeList projectiles1 = player1.getElementsByTagName("projectile");
+                                vars.projectiles1.clear();
+                                for (int i = 0; i < projectiles1.getLength(); i++) {
+                                    Element projectile = (Element) projectiles1.item(i);
+                                    String xAttr = projectile.getAttribute("x");
+                                    String yAttr = projectile.getAttribute("y");
+                                    if (!xAttr.isEmpty() && !yAttr.isEmpty()) {
+                                        float x = Float.parseFloat(xAttr);
+                                        float y = Float.parseFloat(yAttr);
+                                        vars.projectiles1.add(new float[]{x, y});
+                                    }
+                                }
                             }
 
-                            players = document.getElementsByTagName("player2");
+                            players = root.getElementsByTagName("player2");
                             if (players.getLength() > 0) {
                                 Element player2 = (Element) players.item(0);
                                 vars.px2 = Float.parseFloat(player2.getAttribute("x"));
                                 vars.py2 = Float.parseFloat(player2.getAttribute("y"));
                                 vars.pt2 = Integer.parseInt(player2.getAttribute("score"));
+                                NodeList projectiles2 = player2.getElementsByTagName("projectile");
+                                vars.projectiles2.clear();
+                                for (int i = 0; i < projectiles2.getLength(); i++) {
+                                    Element projectile = (Element) projectiles2.item(i);
+                                    String xAttr = projectile.getAttribute("x");
+                                    String yAttr = projectile.getAttribute("y");
+                                    if (!xAttr.isEmpty() && !yAttr.isEmpty()) {
+                                        float x = Float.parseFloat(xAttr);
+                                        float y = Float.parseFloat(yAttr);
+                                        vars.projectiles2.add(new float[]{x, y});
+                                    }
+                                }
                             }
-                            NodeList Clock = document.getElementsByTagName("clock");
+                            NodeList Clock = root.getElementsByTagName("clock");
                             Element Clock1 = (Element) Clock.item(0);
                             String time = Clock1.getAttribute("time");
-                            System.out.println("Clock: " + time);
+                            //System.out.println("Clock: " + time);
 
 
                             //System.out.println("Player1: (" + vars.px1 + ", " + vars.py1 + ")");
@@ -143,12 +202,14 @@ public class Client extends PApplet {
         boolean ignoreFirstClick;
         boolean searching;
         Socket socket;
-        PrintWriter out;
+        ReadVar out;
         BufferedReader in;
         String Lvl;
         float px1, py1;
         float px2, py2;
         int pt1, pt2;
+        CopyOnWriteArrayList<float[]> projectiles1; // List for player1's projectiles
+        CopyOnWriteArrayList<float[]> projectiles2; // List for player2's projectiles
 
         public Variables() {
             this.currentScene = "Menu";
@@ -165,13 +226,41 @@ public class Client extends PApplet {
             this.px2 = 0;
             this.py2 = 0;
             this.pt2 = 0;
+            this.projectiles1 = new CopyOnWriteArrayList<>();
+            this.projectiles2 = new CopyOnWriteArrayList<>();
             try {
                 this.socket = new Socket("127.0.0.1", Integer.parseInt("8000"));
                 this.in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
-                this.out = new PrintWriter(this.socket.getOutputStream(), true);
-
+                this.out = new ReadVar(socket);
             } catch (IOException e) {
                 logger.log(Level.SEVERE, "Erro na comunicação com o servidor", e);
+            }
+        }
+    }
+
+    public static class ReadVar {
+        PrintWriter out;
+        Lock lock = new ReentrantLock();
+
+        public ReadVar(Socket socket) throws IOException {
+            this.out = new PrintWriter(socket.getOutputStream(), true);
+        }
+
+        public void println(String message) {
+            lock.lock();
+            try {
+                out.println(message);
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        public void flush() {
+            lock.lock();
+            try {
+                out.flush();
+            } finally {
+                lock.unlock();
             }
         }
     }
@@ -179,6 +268,7 @@ public class Client extends PApplet {
     Variables vars = new Variables();
     int baseWidth = 800;
     int baseHeight = 800;
+
     public void settings() {
         size(baseWidth, baseHeight);
     }
@@ -356,9 +446,18 @@ public class Client extends PApplet {
         fill(255, 0, 0);
         ellipse(vars.px2, vars.py2, 50, 50);
 
+        for (float[] projectile : vars.projectiles1) {
+            fill(0, 255, 0);
+            ellipse(projectile[0], projectile[1], 10, 10);
+        }
+
+        for (float[] projectile : vars.projectiles2) {
+            fill(255, 255, 0);
+            ellipse(projectile[0], projectile[1], 10, 10);
+        }
+
         popMatrix();
     }
-
 
 
     public void mousePressed() {
@@ -497,10 +596,13 @@ public class Client extends PApplet {
             }
         }
         if (vars.currentScene.equals("GamePage")) {
-            if(key ==' '){
+            if (key == ' ') {
                 vars.out.println("/m space");
                 vars.out.flush();
-            }else {
+            } else if (key == 'q') {
+                vars.out.println("/s " + mouseX + " " + mouseY);
+                vars.out.flush();
+            } else {
                 vars.out.println("/m " + Character.toLowerCase(key));
                 vars.out.flush();
             }

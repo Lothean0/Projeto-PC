@@ -19,7 +19,8 @@ lose(User) -> rpc({lose, User}).
 online() -> rpc(online).
 
 start() ->
-  {Map, Logged_In} = load_state(),
+  Map = load_state(),
+  Logged_In = #{},
   Pid = spawn(fun() -> loop(Map, Logged_In) end),
   register(?MODULE, Pid),
   Pid.
@@ -34,7 +35,7 @@ loop(Map, Logged_In) ->
         error ->
           NewMap = maps:put(U, {P, 1, 0}, Map),
           Pid ! ok,
-          save_state(NewMap, Logged_In),
+          save_state(NewMap),
           loop(NewMap, Logged_In)
       end;
 
@@ -43,7 +44,7 @@ loop(Map, Logged_In) ->
         {ok, _} ->
           NewMap = maps:remove(U, Map),
           Pid ! ok,
-          save_state(NewMap, Logged_In),
+          save_state(NewMap),
           loop(NewMap, Logged_In);
         error ->
           Pid ! user_not_found,
@@ -60,7 +61,7 @@ loop(Map, Logged_In) ->
             false ->
               NewLogged_In = maps:put(U, Socket, Logged_In),
               Pid ! ok,
-              save_state(Map, NewLogged_In),
+              save_state(Map),
               loop(Map, NewLogged_In)
           end;
         {ok, _} ->
@@ -76,7 +77,7 @@ loop(Map, Logged_In) ->
         true ->
           NewLogged_In = maps:remove(U, Logged_In),
           Pid ! ok,
-          save_state(Map, NewLogged_In),
+          save_state(Map),
           loop(Map, NewLogged_In);
         false ->
           Pid ! user_not_logged_in,
@@ -104,7 +105,7 @@ loop(Map, Logged_In) ->
                        maps:put(U, {Pass, Lv, NewStreak}, Map)
                    end,
           Pid ! ok,
-          save_state(NewMap, Logged_In),
+          save_state(NewMap),
           loop(NewMap, Logged_In);
         error ->
           Pid ! user_not_found,
@@ -135,7 +136,7 @@ loop(Map, Logged_In) ->
                        end
                    end,
           Pid ! ok,
-          save_state(NewMap, Logged_In),
+          save_state(NewMap),
           loop(NewMap, Logged_In);
         error ->
           Pid ! user_not_found,
@@ -147,15 +148,14 @@ loop(Map, Logged_In) ->
       loop(Map, Logged_In)
   end.
 
-save_state(Map, Logged_In) ->
-  State = {Map, Logged_In},
-  file:write_file("state.dat", term_to_binary(State)).
+save_state(Map) ->
+  file:write_file("accs.dat", term_to_binary(Map)).
 
 load_state() ->
-  case file:read_file("state.dat") of
+  case file:read_file("accs.dat") of
     {ok, Binary} ->
-      {Map, Logged_In} = binary_to_term(Binary),
-      {Map, Logged_In};
+      Map = binary_to_term(Binary),
+      Map;
     _ ->
-      {#{}, #{}}
+      #{}
   end.

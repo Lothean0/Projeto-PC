@@ -75,6 +75,7 @@ user_logged_in(Sock, User) ->
       loginManager:logout(User),
       gen_tcp:close(Sock);
     {tcp, Sock, Data} ->
+      io:format("Received data: ~p~n", [Data]),
       %%io:format("Received data: ~p~n", [Data]),
       case string:tokens(string:trim(Data), " ") of
         ["/f"] ->
@@ -87,8 +88,12 @@ user_logged_in(Sock, User) ->
             user_not_found ->
               send_message(Sock, {reply, "Failed to check LV"}),
               user_logged_in(Sock, User);
-            Lv ->
+            Lv when is_integer(Lv) ->
+              io:format("Level: ~p~n", [Lv]),
               send_message(Sock, {checkLV, Lv}),
+              user_logged_in(Sock, User);
+            _ ->
+              send_message(Sock, {reply, "Unexpected error while checking LV"}),
               user_logged_in(Sock, User)
           end;
         ["/q"] ->
@@ -126,24 +131,27 @@ match(MatchPid, Sock, User) ->
       loginManager:logout(User),
       gen_tcp:close(Sock);
     {tcp, Sock, Data} ->
-      io:format("Received data: ~p~n", [Data]),
+      %%io:format("Received data: ~p~n", [Data]),
       CleanData = string:trim(Data), %% Trim the input
       case string:tokens(CleanData, " ") of
         ["/m", Key] ->
           %% Send move command to the match process
           MatchPid ! {move, User, Key, self()};
+        ["/s", Dirx, Diry] ->
+          %% Send shoot command to the match process
+          IntDirx = list_to_integer(Dirx),
+          IntDiry = list_to_integer(Diry),
+          FloatDirx = float(IntDirx),
+          FloatDiry = float(IntDiry),
+          MatchPid ! {shoot, User, FloatDirx, FloatDiry, self()};
         _ ->
           %% Handle invalid input
-          gen_tcp:send(Sock, "Invalid command")
+          send_message(Sock, {reply,"Invalid command"})
       end,
       match(MatchPid, Sock, User);
-    {update, {P1, P2, Pt1, Pt2, Clock}} ->
+    {update, {P1, P2, Pt1, Pt2, Pj1, Pj2, Clock}} ->
       %% Update the position of the player
-      send_message(Sock, {gamedata, {P1, P2, Pt1, Pt2, Clock}}),
-      match(MatchPid, Sock, User);
-    {error, Msg} ->
-      %% Handle error messages
-      gen_tcp:send(Sock, "Error: " ++ Msg ++ "\n"),
+      send_message(Sock, {gamedata, {P1, P2, Pt1, Pt2, Pj1, Pj2, Clock}}),
       match(MatchPid, Sock, User);
     win ->
       send_message(Sock, {reply,"You win!"}),
@@ -165,26 +173,60 @@ match(MatchPid, Sock, User) ->
 
 format_XMl(Data) ->
   case Data of
-    {gamedata, {P1, P2, Pt1, Pt2, Clock}} ->
+    {gamedata, {P1, P2, Pt1, Pt2, Pj1, Pj2, Clock}} ->
       {P1x, P1y} = P1,
       {P2x, P2y} = P2,
+      %% Format each projectile as an XML element
+      Projectiles1 = lists:map(
+        fun({_, _, Px, Py}) ->
+          {projectile, [
+            {x, float_to_list(float(Px))},
+            {y, float_to_list(float(Py))}
+          ],[]}
+        end, Pj1),
+
+      Projectiles2 = lists:map(
+        fun({_, _, Px, Py}) ->
+          {projectile, [
+            {x, float_to_list(float(Px))},
+            {y, float_to_list(float(Py))}
+          ],[]}
+        end, Pj2),
+
+      %%io:format("Player1 Position: ~p,~p~n", [float_to_list(float(P1x)), float_to_list(float(P1y))]),
+      %%io:format("Player2 Position: ~p,~p~n", [float_to_list(float(P2x)), float_to_list(float(P2y))]),
+      %%io:format("Projectiles1: ~p~n", [Projectiles1]),
+      %%io:format("Projectiles2: ~p~n", [Projectiles2]),
       XML_Data = {gamedata, [
-        {player1, [{x, float_to_list(float(P1x))}, {y, float_to_list(float(P1y))}, {score, integer_to_list(Pt1)}], []},
-        {player2, [{x, float_to_list(float(P2x))}, {y, float_to_list(float(P2y))}, {score, integer_to_list(Pt2)}], []},
+        {player1, [
+          {x, float_to_list(float(P1x))},
+          {y, float_to_list(float(P1y))},
+          {score, integer_to_list(Pt1)}
+        ], [
+          {projectiles, [], Projectiles1}
+        ]},
+        {player2, [
+          {x, float_to_list(float(P2x))},
+          {y, float_to_list(float(P2y))},
+          {score, integer_to_list(Pt2)}
+        ], [
+          {projectiles, [], Projectiles2}
+        ]},
         {clock, [{time, integer_to_list(Clock)}], []}
       ]},
-      XML=lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
+      XML = lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
       XML;
     {reply, Text} ->
+      io:format("Reply: ~p~n", [Text]),
       XML_Data = {reply, [{text, Text}], []},
-      XML=lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
+      XML = lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
       XML;
     {checkLV, LV} ->
+      io:format("Check LV: ~p~n", [LV]),
       XML_Data = {checkLV, [{level, integer_to_list(LV)}], []},
-      XML=lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
+      XML = lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
       XML
   end.
-
 
 
 send_message(Socket, Message) ->
