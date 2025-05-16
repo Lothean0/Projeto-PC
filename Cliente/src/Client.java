@@ -232,7 +232,7 @@ public class Client extends PApplet {
             this.projectiles1 = new CopyOnWriteArrayList<>();
             this.projectiles2 = new CopyOnWriteArrayList<>();
             try {
-                this.socket = new Socket("127.0.0.1", Integer.parseInt("8000"));
+                this.socket = new Socket("192.168.1.218", Integer.parseInt("8000"));
                 this.in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
                 this.out = new ReadVar(socket);
             } catch (IOException e) {
