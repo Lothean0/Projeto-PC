@@ -271,6 +271,8 @@ public class Client extends PApplet {
     Variables vars = new Variables();
     int baseWidth = 800;
     int baseHeight = 800;
+    float scaleFactorX = (float) width / baseWidth;
+    float scaleFactorY = (float) height / baseHeight;
 
     public void settings() {
         size(baseWidth, baseHeight);
@@ -434,8 +436,6 @@ public class Client extends PApplet {
     }
 
     private void drawGamePage() {
-        float scaleFactorX = (float) width / baseWidth;
-        float scaleFactorY = (float) height / baseHeight;
 
         // Desenhar as bordas a branco
         noFill();
@@ -620,7 +620,7 @@ public class Client extends PApplet {
                 vars.out.println("/m space");
                 vars.out.flush();
             } else if (key == 'q') {
-                vars.out.println("/s " + mouseX + " " + mouseY);
+                vars.out.println("/s " + mouseX * scaleFactorX + " " + mouseY * scaleFactorY);
                 vars.out.flush();
             } else {
                 vars.out.println("/m " + Character.toLowerCase(key));
