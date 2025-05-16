@@ -26,7 +26,7 @@ connector(Players) ->
   end.
 
 loop(Players, StartTime,Spawn,LClock) ->
-  Duration = 120000,
+  Duration = 5000,
   Tickrate = 10,
   AccelX = 0.25,
   AccelY = 0.25,

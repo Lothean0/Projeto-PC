@@ -271,13 +271,17 @@ public class Client extends PApplet {
     Variables vars = new Variables();
     int baseWidth = 800;
     int baseHeight = 800;
+    float scaleFactorX;
+    float scaleFactorY;
 
     public void settings() {
         size(baseWidth, baseHeight);
     }
 
     public void setup() {
-        size(800, 800);
+        size(baseWidth, baseHeight);
+        scaleFactorX = (float) width / baseWidth;
+        scaleFactorY = (float) height / baseHeight;
         smooth();
         surface.setResizable(true);
         textSize(16);
@@ -418,7 +422,9 @@ public class Client extends PApplet {
     private void drawMatchPage() {
         fill(255);
         textSize(32);
+        textAlign(CENTER, CENTER); // Ensure text alignment is centered
         text("User: " + vars.username, width * 0.5f, height * 0.3f);
+
         textSize(16);
         text("Level: " + vars.Lvl, width * 0.5f, height * 0.35f);
 
