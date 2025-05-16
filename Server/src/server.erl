@@ -30,7 +30,7 @@ user_logged_out(Sock) ->
       gen_tcp:close(Sock);
     {tcp, _, Data} ->
       %%io:format("Received data: ~p~n", [Data]),
-      case string:tokens(Data, " ") of
+      case string:tokens(string:trim(Data), " ") of
         ["/cr", User, Pass] ->
           case loginManager:create_account(User, Pass) of
             ok ->
@@ -61,7 +61,18 @@ user_logged_out(Sock) ->
               send_message(Sock, {reply, "Login failed"}),
               user_logged_out(Sock)
           end;
-        _ ->
+        ["/ld"] ->
+          %% Leaderboard
+          case loginManager:leaderboard() of
+            [] ->
+              send_message(Sock, {reply, "No users found"}),
+              user_logged_out(Sock);
+            Leaderboard ->
+              send_message(Sock, {leaderboard, Leaderboard}),
+              user_logged_out(Sock)
+          end;
+        Data ->
+          io:format("Received data: ~p~n", [Data]),
           %% Invalid command
           send_message(Sock, {reply, "Invalid command"}),
           user_logged_out(Sock)
@@ -110,6 +121,17 @@ user_logged_in(Sock, User) ->
               send_message(Sock, {reply, "Unexpected error while checking streak"}),
               user_logged_in(Sock, User)
           end;
+        ["/ld"] ->
+          %% Leaderboard
+          case loginManager:leaderboard() of
+            [] ->
+              send_message(Sock, {reply, "No users found"}),
+              user_logged_in(Sock, User);
+            Leaderboard ->
+              io:format("Leaderboard: ~p~n", [Leaderboard]),
+              send_message(Sock, {leaderboard, Leaderboard}),
+              user_logged_in(Sock, User)
+          end;
         ["/q"] ->
           case loginManager:logout(User) of
             ok ->
@@ -119,6 +141,9 @@ user_logged_in(Sock, User) ->
               send_message(Sock, {reply,"Logout failed"}),
               user_logged_in(Sock, User)
           end;
+        ["/stop"] ->
+          matchmaker ! {self(), {stopsearching, User}},
+          user_logged_in(Sock, User);
         _ ->
           send_message(Sock, {reply,"Invalid command"}),
           user_logged_in(Sock, User)
@@ -127,7 +152,10 @@ user_logged_in(Sock, User) ->
       send_message(Sock, {reply,"You are already in the queue for a match."}),
       user_logged_in(Sock, User);
     waiting ->
-      send_message(Sock, {reply,"Searching for a match..."}),
+      send_message(Sock, {reply,"Searching for a match."}),
+      user_logged_in(Sock, User);
+    {stopedsearching, User} ->
+      send_message(Sock, {reply,"Stopped searching for a match."}),
       user_logged_in(Sock, User);
     {match_found, MatchPid} ->
       send_message(Sock, {reply,"Match found!"}),
@@ -139,7 +167,6 @@ user_logged_in(Sock, User) ->
   end.
 
 match(MatchPid, Sock, User) ->
-
   receive
     {tcp_closed, Sock} ->
       loginManager:logout(User),
@@ -269,18 +296,28 @@ format_XMl(Data) ->
       XML = lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
       XML;
     {reply, Text} ->
-      io:format("Reply: ~p~n", [Text]),
       XML_Data = {reply, [{text, Text}], []},
       XML = lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
       XML;
     {checkLV, LV} ->
-      io:format("Check LV: ~p~n", [LV]),
       XML_Data = {checkLV, [{level, integer_to_list(LV)}], []},
       XML = lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
       XML;
     {checkStreak, Streak} ->
-      io:format("Check Streak: ~p~n", [Streak]),
       XML_Data = {checkStreak, [{streak, integer_to_list(Streak)}], []},
+      XML = lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
+      XML;
+    {leaderboard, Leaderboard} ->
+      %% Handle leaderboard data
+      LeaderboardXML = lists:map(
+        fun({User, {_, Lv, Streak}}) ->
+          {user, [
+            {username, User},
+            {level, integer_to_list(Lv)},
+            {streak, integer_to_list(Streak)}
+          ], []}
+        end, Leaderboard),
+      XML_Data = {leaderboard, LeaderboardXML},
       XML = lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
       XML
   end.

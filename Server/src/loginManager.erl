@@ -1,7 +1,7 @@
 -module(loginManager).
 
 %% API
--export([create_account/2, close_account/2, login/3, logout/1, check_lv/1,check_streak/1, win/1, lose/1, online/0, start/0]).
+-export([create_account/2, close_account/2, login/3, logout/1, check_lv/1,check_streak/1, win/1, lose/1, leaderboard/0, online/0, start/0]).
 
 rpc(Request) ->
   ?MODULE ! {self(), Request},
@@ -17,6 +17,7 @@ check_lv(User) -> rpc({check_level, User}).
 check_streak(User) -> rpc({check_streak, User}).
 win(User) -> rpc({win, User}).
 lose(User) -> rpc({lose, User}).
+leaderboard() -> rpc(leaderboard).
 online() -> rpc(online).
 
 start() ->
@@ -153,6 +154,20 @@ loop(Map, Logged_In) ->
           Pid ! user_not_found,
           loop(Map, Logged_In)
       end;
+    {Pid, leaderboard} ->
+      Sorted = lists:sort(
+        fun({_, {_, Lv1, Streak1}}, {_, {_, Lv2, Streak2}}) ->
+          case Lv1 =:= Lv2 of
+            true -> Streak1 > Streak2;
+            false -> Lv1 > Lv2
+          end
+        end,
+        maps:to_list(Map)
+      ),
+      Top = lists:sublist(Sorted, 10),
+      Pid ! Top,
+      loop(Map, Logged_In);
+
 
     {Pid, online} ->
       Pid ! Logged_In,

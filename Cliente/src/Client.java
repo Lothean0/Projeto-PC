@@ -106,8 +106,11 @@ public class Client extends PApplet {
                                     vars.password = "";
                                     System.out.println("Account closure failed");
                                     break;
-                                case "Searching for a match...":
+                                case "Searching for a match.":
                                     vars.searching = true;
+                                    break;
+                                case "Stopped searching for a match.":
+                                    vars.searching = false;
                                     break;
                                 case "Match found!":
                                     System.out.println("Match found!2");
@@ -158,11 +161,17 @@ public class Client extends PApplet {
                                     break;
                             }
                             break;
-                        case "checkLV":
-                            String level = root.getAttribute("level");
-                            vars.Lvl = level;
-                            vars.currentScene = "MatchPage";
-                            System.out.println("Level: " + level);
+                        case "leaderboard":
+                            NodeList ldplayers = root.getElementsByTagName("user");
+                            vars.leaderboard.clear();
+                            for (int i = 0; i < ldplayers.getLength(); i++) {
+                                Element player = (Element) ldplayers.item(i);
+                                String username = player.getAttribute("username");
+                                String level = player.getAttribute("level");
+                                String streak = player.getAttribute("streak");
+                                vars.leaderboard.add(new String[]{username, level, streak});
+                                System.out.println("Username: " + username + ", Level: " + level + ", Streak: " + streak);
+                            }
                             break;
                         case "gamedata":
                             NodeList players = root.getElementsByTagName("player1");
@@ -269,9 +278,10 @@ public class Client extends PApplet {
         CopyOnWriteArrayList<float[]> projectiles2; // List for player2's projectiles
         CopyOnWriteArrayList<float[]> CDMods;
         CopyOnWriteArrayList<float[]> SPMods;
+        CopyOnWriteArrayList<String[]> leaderboard;
         int time;
 
-        public Variables() {
+        public Variables(int Port) {
             this.currentScene = "Menu";
             this.username = "";
             this.password = "";
@@ -291,8 +301,11 @@ public class Client extends PApplet {
             this.projectiles2 = new CopyOnWriteArrayList<>();
             this.CDMods = new CopyOnWriteArrayList<>();
             this.SPMods = new CopyOnWriteArrayList<>();
+            this.leaderboard = new CopyOnWriteArrayList<>();
             try {
-                this.socket = new Socket("192.168.1.218", Integer.parseInt("8000"));
+                //String ip = "188.37.73.48";
+                String ip = "localhost";
+                this.socket = new Socket(ip, Port);
                 this.in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
                 this.out = new ReadVar(socket);
             } catch (IOException e) {
@@ -328,7 +341,7 @@ public class Client extends PApplet {
         }
     }
 
-    Variables vars = new Variables();
+    static Variables vars;
     int baseWidth = 800;
     int baseHeight = 800;
     float scaleFactorX;
@@ -387,6 +400,11 @@ public class Client extends PApplet {
         rect(width * 0.4f, height * 0.55f, width * 0.2f, height * 0.05f, 10);
         fill(0);
         text("Criar Conta", width * 0.5f, height * 0.575f);
+
+        fill(100, 200, 100);
+        rect(width * 0.4f, height * 0.65f, width * 0.2f, height * 0.05f, 10);
+        fill(0);
+        text("Leaderboard", width * 0.5f, height * 0.675f);
     }
 
     private void drawLogin() {
@@ -596,6 +614,13 @@ public class Client extends PApplet {
                 vars.typingPassword = false;
                 vars.ignoreFirstClick = true;
             }
+
+            // Check "Leaderboard" button
+            else if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
+                    mouseY > height * 0.65f && mouseY < height * 0.7f) {
+                vars.out.println("/ld");
+                vars.out.flush();
+            }
         }
 
         if (vars.currentScene.equals("Login")) {
@@ -681,8 +706,13 @@ public class Client extends PApplet {
             }
             // "Match" button
             else if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
-                    mouseY > height * 0.5f && mouseY < height * 0.55f) {
+                    mouseY > height * 0.5f && mouseY < height * 0.55f && !vars.searching) {
                 vars.out.println("/f");
+                vars.out.flush();
+            }
+            else if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
+                    mouseY > height * 0.5f && mouseY < height * 0.55f && vars.searching) {
+                vars.out.println("/stop");
                 vars.out.flush();
             }
         }
@@ -729,6 +759,7 @@ public class Client extends PApplet {
     private static final Logger logger = Logger.getLogger(Client.class.getName());
 
     public static void main(String[] args) {
+        vars = new Variables(Integer.parseInt(args[0]));
         PApplet.main("Client");
     }
 }

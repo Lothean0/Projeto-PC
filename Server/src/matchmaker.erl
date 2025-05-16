@@ -46,10 +46,10 @@ loop(Rooms, Rid, Waiting) ->
               loop(Rooms, Rid, NewWaiting)
           end
       end;
-    {sPid,{stopsearching,User}} ->
+    {SPid,{stopsearching,User}} ->
       %% Remove the user from the waiting list
       NewWaiting = lists:filter(fun({U, _, _}) -> U =/= User end, Waiting),
-      sPid ! {stopedsearching, User},
+      SPid ! {stopedsearching, User},
       loop(Rooms, Rid, NewWaiting)
   end.
 
