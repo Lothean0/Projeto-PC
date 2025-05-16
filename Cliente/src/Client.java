@@ -177,7 +177,7 @@ public class Client extends PApplet {
                             //System.out.println("Clock: " + time);
 
                             System.out.println("Clock: " + time);
-                            vars.time = Float.parseFloat(time);
+                            vars.time = Integer.parseInt(time);
 
                             //System.out.println("Player1: (" + vars.px1 + ", " + vars.py1 + ")");
                             //System.out.println("Player2: (" + vars.px2 + ", " + vars.py2 + ")");
@@ -212,7 +212,7 @@ public class Client extends PApplet {
         int pt1, pt2;
         CopyOnWriteArrayList<float[]> projectiles1; // List for player1's projectiles
         CopyOnWriteArrayList<float[]> projectiles2; // List for player2's projectiles
-        float time;
+        int time;
 
         public Variables() {
             this.currentScene = "Menu";
@@ -477,11 +477,15 @@ public class Client extends PApplet {
         textSize(20);
         textAlign(LEFT, TOP);
         text("Player 1 Points: " + vars.pt1, 10, 10);
-        textAlign(RIGHT,TOP);
         text("Player 2 Points: " + vars.pt2, 10, 40);
 
+
         // Exibir o tempo do jogo
-        text("Tempo: " + vars.time, 10, 70);
+        int totalSeconds = vars.time / 1000;
+        int minutos = totalSeconds / 60;
+        int segundos = totalSeconds % 60;
+        textAlign(CENTER,TOP);
+        text(String.format("Tempo: %02d:%02d", minutos, segundos), (float) width / 2, 70);
 
     }
 

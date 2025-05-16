@@ -26,7 +26,7 @@ connector(Players) ->
   end.
 
 loop(Players, StartTime,Spawn,LClock) ->
-  Duration = 5000,
+  Duration = 120000,
   Tickrate = 10,
   AccelX = 0.25,
   AccelY = 0.25,
@@ -142,8 +142,7 @@ update_accel(Key,{AccelX, AccelY}) ->
     "s" -> {0, AccelY};
     "a" -> {-AccelX, 0};
     "d" -> {AccelX, 0};
-    "space" -> {0, 0};
-    _ -> {AccelX, AccelY}
+    _ -> {0, 0}
   end.
 
 shootprojectile({Speed, Cooldown, LastShootTime, Projectiles}, TargetX, TargetY, LClock, {Px, Py}) ->
