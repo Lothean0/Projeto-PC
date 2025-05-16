@@ -132,6 +132,23 @@ public class Client extends PApplet {
                                             newRoot3 = receiveMessage();
                                         }
                                     }
+                                    vars.out.println("/Str");
+                                    vars.out.flush();
+                                    Element newRoot4 = receiveMessage();
+                                    while(!Objects.equals(root.getTagName(), "checkStreak")) {
+                                        if (newRoot4.getTagName().equals("checkStreak")) {
+                                            String streak = newRoot4.getAttribute("streak");
+                                            vars.streak = streak;
+                                            vars.currentScene = "MatchPage";
+                                            System.out.println("Streak: " + streak);
+                                            break;
+                                        }
+                                        else {
+                                            vars.out.println("/Str");
+                                            vars.out.flush();
+                                            newRoot4 = receiveMessage();
+                                        }
+                                    }
                                     break;
                                 case "Invalid command":
                                     System.out.println("Invalid command");
@@ -195,6 +212,27 @@ public class Client extends PApplet {
                             System.out.println("Clock: " + time);
                             vars.time = Integer.parseInt(time);
 
+                            NodeList modifiers = root.getElementsByTagName("modifier");
+                            vars.CDMods.clear();
+                            vars.SPMods.clear();
+                            for (int i = 0; i < modifiers.getLength(); i++) {
+                                Element modifier = (Element) modifiers.item(i);
+                                String xAttr = modifier.getAttribute("x");
+                                String yAttr = modifier.getAttribute("y");
+                                String valueAttr = modifier.getAttribute("value");
+                                String typeAttr = modifier.getAttribute("type");
+                                if (!xAttr.isEmpty() && !yAttr.isEmpty()) {
+                                    float x = Float.parseFloat(xAttr);
+                                    float y = Float.parseFloat(yAttr);
+                                    float value = Float.parseFloat(valueAttr);
+                                    if (typeAttr.equals("CD")) {
+                                        vars.CDMods.add(new float[]{x, y, value});
+                                    } else if (typeAttr.equals("SP")) {
+                                        vars.SPMods.add(new float[]{x, y, value});
+                                    }
+                                }
+                            }
+
                             //System.out.println("Player1: (" + vars.px1 + ", " + vars.py1 + ")");
                             //System.out.println("Player2: (" + vars.px2 + ", " + vars.py2 + ")");
                             break;
@@ -229,6 +267,8 @@ public class Client extends PApplet {
         int pt1, pt2;
         CopyOnWriteArrayList<float[]> projectiles1; // List for player1's projectiles
         CopyOnWriteArrayList<float[]> projectiles2; // List for player2's projectiles
+        CopyOnWriteArrayList<float[]> CDMods;
+        CopyOnWriteArrayList<float[]> SPMods;
         int time;
 
         public Variables() {
@@ -249,6 +289,8 @@ public class Client extends PApplet {
             this.pt2 = 0;
             this.projectiles1 = new CopyOnWriteArrayList<>();
             this.projectiles2 = new CopyOnWriteArrayList<>();
+            this.CDMods = new CopyOnWriteArrayList<>();
+            this.SPMods = new CopyOnWriteArrayList<>();
             try {
                 this.socket = new Socket("192.168.1.218", Integer.parseInt("8000"));
                 this.in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
@@ -446,6 +488,9 @@ public class Client extends PApplet {
         textSize(16);
         text("Level: " + vars.Lvl, width * 0.5f, height * 0.35f);
 
+        textSize(16);
+        text("Streak: " + vars.streak, width * 0.5f, height * 0.4f);
+
         fill(100, 200, 100);
         rect(width * 0.4f, height * 0.5f, width * 0.2f, height * 0.05f, 10);
         fill(0);
@@ -487,6 +532,30 @@ public class Client extends PApplet {
         for (float[] projectile : vars.projectiles2) {
             fill(255, 255, 0);
             ellipse(projectile[0], projectile[1], 10, 10);
+        }
+
+        for (float[] mod : vars.CDMods) {
+            if(mod[2] > 0) {
+                fill(255, 165, 0);
+                ellipse(mod[0], mod[1], 20, 20);
+            }else
+            {
+                fill(0, 255, 0);
+                ellipse(mod[0], mod[1], 20, 20);
+            }
+        }
+
+        for (float[] mod : vars.SPMods) {
+            if(mod[2] > 0) {
+                //draw blue circle
+                fill(0, 0, 255);
+                ellipse(mod[0], mod[1], 20, 20);
+            }else
+            {
+                //draw red circle
+                fill(255, 0, 0);
+                ellipse(mod[0], mod[1], 20, 20);
+            }
         }
         popMatrix();
 

@@ -26,9 +26,12 @@ loop(Rooms, Rid, Waiting) ->
               P2 = {700,400}, %% Player 2 position
               V = {0, 0}, %% Velocity
               A = {0, 0}, %% Acceleration
-              Pj = {5,1000,0,[]}, %% Projectiles speed, cooldown, lastshootime, list of projectiles
+              CD = 1000,
+              SP = 5,
+              Pj = {SP,CD,0,[]}, %% Projectiles speed, cooldown, lastshootime, list of projectiles
               Pt = 0, %% Points
-              NewRoom = {Rid, [{User, Lv, SPid, {P1, V, A, Pj, Pt}}, {User2, Lv2, SPid2, {P2, V, A, Pj, Pt}}]},
+
+              NewRoom = {Rid, [{User, Lv, SPid, {P1, V, A, Pj, Pt}}, {User2, Lv2, SPid2, {P2, V, A, Pj, Pt}},CD,SP]},
               NewRooms = maps:put(Rid, NewRoom, Rooms),
               NewWaiting = lists:delete(Match, Waiting),
               io:format("Test.~n"),

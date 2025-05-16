@@ -163,9 +163,9 @@ match(MatchPid, Sock, User) ->
           send_message(Sock, {reply,"Invalid command"})
       end,
       match(MatchPid, Sock, User);
-    {update, {P1, P2, Pt1, Pt2, Pj1, Pj2, Clock}} ->
+    {update, {P1, P2, Pt1, Pt2, Pj1, Pj2, Clock,Modifiers}} ->
       %% Update the position of the player
-      send_message(Sock, {gamedata, {P1, P2, Pt1, Pt2, Pj1, Pj2, Clock}}),
+      send_message(Sock, {gamedata, {P1, P2, Pt1, Pt2, Pj1, Pj2, Clock, Modifiers}}),
       match(MatchPid, Sock, User);
     win ->
       case loginManager:win(User) of
@@ -201,25 +201,48 @@ match(MatchPid, Sock, User) ->
 
 format_XMl(Data) ->
   case Data of
-    {gamedata, {P1, P2, Pt1, Pt2, Pj1, Pj2, Clock}} ->
+    {gamedata, {P1, P2, Pt1, Pt2, Pj1, Pj2, Clock, Modifiers}} ->
       {P1x, P1y} = P1,
       {P2x, P2y} = P2,
       %% Format each projectile as an XML element
       Projectiles1 = lists:map(
-        fun({_, _, Px, Py}) ->
+        fun({_, _, Px, Py, _Speed}) -> %% Include Speed in the pattern
           {projectile, [
             {x, float_to_list(float(Px))},
             {y, float_to_list(float(Py))}
-          ],[]}
+          ], []}
         end, Pj1),
 
       Projectiles2 = lists:map(
-        fun({_, _, Px, Py}) ->
+        fun({_, _, Px, Py, _Speed}) -> %% Include Speed in the pattern
           {projectile, [
             {x, float_to_list(float(Px))},
             {y, float_to_list(float(Py))}
-          ],[]}
+          ], []}
         end, Pj2),
+
+      {CDMods, SPMods} = Modifiers,
+      CDModsXML = lists:map(
+        fun({{Mx, My}, ModValue}) ->
+          {modifier, [
+            {type, "CD"},
+            {x, float_to_list(float(Mx))},
+            {y, float_to_list(float(My))},
+            {value, float_to_list(float(ModValue))}
+          ], []}
+        end, CDMods),
+
+      SPModsXML = lists:map(
+        fun({{Mx, My}, ModValue}) ->
+          {modifier, [
+            {type, "SP"},
+            {x, float_to_list(float(Mx))},
+            {y, float_to_list(float(My))},
+            {value, float_to_list(float(ModValue))}
+          ], []}
+        end, SPMods),
+
+      ModifiersXML = CDModsXML ++ SPModsXML,
 
       %%io:format("Player1 Position: ~p,~p~n", [float_to_list(float(P1x)), float_to_list(float(P1y))]),
       %%io:format("Player2 Position: ~p,~p~n", [float_to_list(float(P2x)), float_to_list(float(P2y))]),
@@ -240,7 +263,8 @@ format_XMl(Data) ->
         ], [
           {projectiles, [], Projectiles2}
         ]},
-        {clock, [{time, integer_to_list(Clock)}], []}
+        {clock, [{time, integer_to_list(Clock)}], []},
+        {modifiers, [], ModifiersXML}
       ]},
       XML = lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
       XML;
