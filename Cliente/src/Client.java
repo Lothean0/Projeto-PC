@@ -174,13 +174,10 @@ public class Client extends PApplet {
                             NodeList Clock = root.getElementsByTagName("clock");
                             Element Clock1 = (Element) Clock.item(0);
                             String time = Clock1.getAttribute("time");
-<<<<<<< Updated upstream
                             //System.out.println("Clock: " + time);
 
-=======
                             System.out.println("Clock: " + time);
                             vars.time = Float.parseFloat(time);
->>>>>>> Stashed changes
 
                             //System.out.println("Player1: (" + vars.px1 + ", " + vars.py1 + ")");
                             //System.out.println("Player2: (" + vars.px2 + ", " + vars.py2 + ")");
@@ -213,12 +210,9 @@ public class Client extends PApplet {
         float px1, py1;
         float px2, py2;
         int pt1, pt2;
-<<<<<<< Updated upstream
         CopyOnWriteArrayList<float[]> projectiles1; // List for player1's projectiles
         CopyOnWriteArrayList<float[]> projectiles2; // List for player2's projectiles
-=======
         float time;
->>>>>>> Stashed changes
 
         public Variables() {
             this.currentScene = "Menu";
@@ -443,6 +437,12 @@ public class Client extends PApplet {
         float scaleFactorX = (float) width / baseWidth;
         float scaleFactorY = (float) height / baseHeight;
 
+        // Desenhar as bordas a branco
+        noFill();
+        stroke(255);
+        rect(50 * scaleFactorX, 100 * scaleFactorY, width - 100 * scaleFactorX, height - 200 * scaleFactorY);
+        noStroke();
+
         pushMatrix();
         translate((width - baseWidth * scaleFactorX) / 2, (height - baseHeight * scaleFactorY) / 2);
         scale(scaleFactorX, scaleFactorY);  // Scale the coordinate system
@@ -464,13 +464,14 @@ public class Client extends PApplet {
             fill(255, 255, 0);
             ellipse(projectile[0], projectile[1], 10, 10);
         }
-
         popMatrix();
+
 
         fill(255);
         textSize(20);
         textAlign(LEFT, TOP);
         text("Player 1 Points: " + vars.pt1, 10, 10);
+        textAlign(RIGHT,TOP);
         text("Player 2 Points: " + vars.pt2, 10, 40);
 
         // Exibir o tempo do jogo
