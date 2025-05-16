@@ -129,7 +129,7 @@ update_Pos_Vel_Col({Px, Py}, {Vx, Vy}, {Ax, Ay}, Pt, MaxVel, MinP,MaxP, Spawn) -
     (NewPy - 25 < MinPy) orelse (NewPy + 25 > MaxPy) of
     true ->
       %% Collision detected: increment Pt, reset position, velocity, and acceleration
-      {Pt + 1, {{Spawnx, Spawny}, {0, 0}, {0, 0}}};
+      {Pt + 2, {{Spawnx, Spawny}, {0, 0}, {0, 0}}};
     false ->
       %% No collision: return updated position and velocity
       {Pt, {{NewPx, NewPy}, {ClampedVx, ClampedVy}, {Ax, Ay}}}

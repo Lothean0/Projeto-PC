@@ -96,6 +96,20 @@ user_logged_in(Sock, User) ->
               send_message(Sock, {reply, "Unexpected error while checking LV"}),
               user_logged_in(Sock, User)
           end;
+        ["/Str"] ->
+          %% Check streak
+          case loginManager:check_streak(User) of
+            user_not_found ->
+              send_message(Sock, {reply, "Failed to check streak"}),
+              user_logged_in(Sock, User);
+            Streak when is_integer(Streak) ->
+              io:format("Streak: ~p~n", [Streak]),
+              send_message(Sock, {checkStreak, Streak}),
+              user_logged_in(Sock, User);
+            _ ->
+              send_message(Sock, {reply, "Unexpected error while checking streak"}),
+              user_logged_in(Sock, User)
+          end;
         ["/q"] ->
           case loginManager:logout(User) of
             ok ->
@@ -238,6 +252,11 @@ format_XMl(Data) ->
     {checkLV, LV} ->
       io:format("Check LV: ~p~n", [LV]),
       XML_Data = {checkLV, [{level, integer_to_list(LV)}], []},
+      XML = lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
+      XML;
+    {checkStreak, Streak} ->
+      io:format("Check Streak: ~p~n", [Streak]),
+      XML_Data = {checkStreak, [{streak, integer_to_list(Streak)}], []},
       XML = lists:flatten(xmerl:export_simple([XML_Data], xmerl_xml)),
       XML
   end.

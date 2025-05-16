@@ -63,7 +63,6 @@ public class Client extends PApplet {
                                         if (newRoot1.getTagName().equals("checkLV")) {
                                             String level = newRoot1.getAttribute("level");
                                             vars.Lvl = level;
-                                            vars.currentScene = "MatchPage";
                                             System.out.println("Level: " + level);
                                             break;
                                         }
@@ -71,6 +70,23 @@ public class Client extends PApplet {
                                             vars.out.println("/Lv");
                                             vars.out.flush();
                                             newRoot1 = receiveMessage();
+                                        }
+                                    }
+                                    vars.out.println("/Str");
+                                    vars.out.flush();
+                                    Element newRoot2 = receiveMessage();
+                                    while(!Objects.equals(root.getTagName(), "checkStreak")) {
+                                        if (newRoot2.getTagName().equals("checkStreak")) {
+                                            String streak = newRoot2.getAttribute("streak");
+                                            vars.streak = streak;
+                                            vars.currentScene = "MatchPage";
+                                            System.out.println("Streak: " + streak);
+                                            break;
+                                        }
+                                        else {
+                                            vars.out.println("/Str");
+                                            vars.out.flush();
+                                            newRoot2 = receiveMessage();
                                         }
                                     }
                                     break;
@@ -101,10 +117,10 @@ public class Client extends PApplet {
                                 case "You win!", "You lose!", "Draw!":
                                     vars.out.println("/Lv");
                                     vars.out.flush();
-                                    Element newRoot2 = receiveMessage();
+                                    Element newRoot3 = receiveMessage();
                                     while(!Objects.equals(root.getTagName(), "checkLV")) {
-                                        if (newRoot2.getTagName().equals("checkLV")) {
-                                            String level = newRoot2.getAttribute("level");
+                                        if (newRoot3.getTagName().equals("checkLV")) {
+                                            String level = newRoot3.getAttribute("level");
                                             vars.Lvl = level;
                                             vars.currentScene = "MatchPage";
                                             System.out.println("Level: " + level);
@@ -113,7 +129,7 @@ public class Client extends PApplet {
                                         else {
                                             vars.out.println("/Lv");
                                             vars.out.flush();
-                                            newRoot2 = receiveMessage();
+                                            newRoot3 = receiveMessage();
                                         }
                                     }
                                     break;
@@ -207,6 +223,7 @@ public class Client extends PApplet {
         ReadVar out;
         BufferedReader in;
         String Lvl;
+        String streak;
         float px1, py1;
         float px2, py2;
         int pt1, pt2;
@@ -223,6 +240,7 @@ public class Client extends PApplet {
             this.ignoreFirstClick = false;
             this.searching = false;
             this.Lvl = "";
+            this.streak = "";
             this.px1 = 0;
             this.py1 = 0;
             this.pt1 = 0;

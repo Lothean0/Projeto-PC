@@ -1,7 +1,7 @@
 -module(loginManager).
 
 %% API
--export([create_account/2, close_account/2, login/3, logout/1, check_lv/1, win/1, lose/1, online/0, start/0]).
+-export([create_account/2, close_account/2, login/3, logout/1, check_lv/1,check_streak/1, win/1, lose/1, online/0, start/0]).
 
 rpc(Request) ->
   ?MODULE ! {self(), Request},
@@ -14,6 +14,7 @@ close_account(User, Pass) -> rpc({close_account, User, Pass}).
 login(User, Pass, Socket) -> rpc({login, User, Pass, Socket}).
 logout(User) -> rpc({logout, User}).
 check_lv(User) -> rpc({check_level, User}).
+check_streak(User) -> rpc({check_streak, User}).
 win(User) -> rpc({win, User}).
 lose(User) -> rpc({lose, User}).
 online() -> rpc(online).
@@ -88,6 +89,16 @@ loop(Map, Logged_In) ->
       case maps:find(U, Map) of
         {ok, {_Pass, Lv, _Streak}} ->
           Pid ! Lv,
+          loop(Map, Logged_In);
+        error ->
+          Pid ! user_not_found,
+          loop(Map, Logged_In)
+      end;
+
+    {Pid, {check_streak, U}} ->
+      case maps:find(U, Map) of
+        {ok, {_Pass, _Lv, Streak}} ->
+          Pid ! Streak,
           loop(Map, Logged_In);
         error ->
           Pid ! user_not_found,
