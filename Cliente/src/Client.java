@@ -259,6 +259,7 @@ public class Client extends PApplet {
     }
 
     public static class Variables {
+        String anterior_Scene;
         String currentScene;
         String username;
         String password;
@@ -379,6 +380,9 @@ public class Client extends PApplet {
             case "GamePage":
                 drawGamePage();
                 break;
+            case "Leaderboard":
+                drawLeaderboard();
+                break;
             default:
                 drawMenu();
                 break;
@@ -388,6 +392,7 @@ public class Client extends PApplet {
     private void drawMenu() {
         fill(255);
         textSize(32);
+        textAlign(CENTER, CENTER);
         text("Menu", width * 0.5f, height * 0.4f);
         textSize(16);
 
@@ -515,9 +520,15 @@ public class Client extends PApplet {
         text(vars.searching ? "Searching" : "Match", width * 0.5f, height * 0.525f);
 
         fill(200, 100, 100);
+        rect(width * 0.4f, height * 0.7f, width * 0.2f, height * 0.05f, 10);
+        fill(0);
+        text("Logout", width * 0.5f, height * 0.725f);
+
+        // Botão Leaderboard
+        fill(100, 200, 100);
         rect(width * 0.4f, height * 0.6f, width * 0.2f, height * 0.05f, 10);
         fill(0);
-        text("Logout", width * 0.5f, height * 0.625f);
+        text("Leaderboard", width * 0.5f, height * 0.625f);
     }
 
     private void drawGamePage() {
@@ -577,13 +588,11 @@ public class Client extends PApplet {
         }
         popMatrix();
 
-
         fill(255);
         textSize(20);
         textAlign(LEFT, TOP);
         text("Player 1 Points: " + vars.pt1, 10, 10);
         text("Player 2 Points: " + vars.pt2, 10, 40);
-
 
         // Exibir o tempo do jogo
         int totalSeconds = vars.time / 1000;
@@ -594,6 +603,69 @@ public class Client extends PApplet {
 
     }
 
+    private void drawLeaderboard() {
+        fill(255);
+        textSize(32);
+        textAlign(CENTER, TOP);
+        text("Leaderboard", width * 0.5f, 50);
+
+        // Definições da tabela
+        textSize(20);
+        float y = 120;
+        float rowHeight = 30;
+        float headerHeight = 35;
+        float col1 = width * 0.1f;
+        float col2 = width * 0.45f;
+        float col3 = width * 0.7f;
+        float col4 = width * 0.9f;
+
+        // Cabeçalhos
+        fill(200);
+        textAlign(CENTER, TOP);
+        text("User", (col1 + col2) / 2, y);
+        text("Level", (col2 + col3) / 2, y);
+        text("Streak", (col3 + col4) / 2, y);
+
+        // Desenhar linhas horizontais e verticais da tabela
+        stroke(180);
+        strokeWeight(2);
+        // Linha superior do cabeçalho
+        line(col1, y - 5, col4, y - 5);
+        // Linha inferior do cabeçalho
+        line(col1, y + headerHeight, col4, y + headerHeight);
+        // Linhas verticais
+        line(col1, y - 5, col1, y + headerHeight + vars.leaderboard.size() * rowHeight);
+        line(col2, y - 5, col2, y + headerHeight + vars.leaderboard.size() * rowHeight);
+        line(col3, y - 5, col3, y + headerHeight + vars.leaderboard.size() * rowHeight);
+        line(col4, y - 5, col4, y + headerHeight + vars.leaderboard.size() * rowHeight);
+
+        // Linhas e dados dos jogadores
+        float rowY = y + headerHeight;
+        fill(255);
+        textAlign(CENTER, TOP);
+        for (String[] player : vars.leaderboard) {
+            // Linhas horizontais entre as linhas
+            stroke(180);
+            line(col1, rowY, col4, rowY);
+
+            noStroke();
+            text(player[0], (col1 + col2) / 2, rowY + 5);
+            text(player[1], (col2 + col3) / 2, rowY + 5);
+            text(player[2], (col3 + col4) / 2, rowY + 5);
+
+            rowY += rowHeight;
+        }
+        // Linha inferior da tabela
+        stroke(180);
+        line(col1, rowY, col4, rowY);
+        noStroke();
+
+        // Botão de voltar
+        fill(200, 100, 100);
+        rect(width * 0.4f, height * 0.85f, width * 0.2f, height * 0.05f, 10);
+        fill(0);
+        text("Voltar", width * 0.5f, height * 0.865f);
+    }
 
     public void mousePressed() {
         if (vars.currentScene.equals("Menu")) {
@@ -614,10 +686,11 @@ public class Client extends PApplet {
                 vars.typingPassword = false;
                 vars.ignoreFirstClick = true;
             }
-
             // Check "Leaderboard" button
             else if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
                     mouseY > height * 0.65f && mouseY < height * 0.7f) {
+                vars.currentScene = "Leaderboard";
+                vars.anterior_Scene = "Menu";
                 vars.out.println("/ld");
                 vars.out.flush();
             }
@@ -700,7 +773,7 @@ public class Client extends PApplet {
             }
             // "Logout" button
             if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
-                    mouseY > height * 0.6f && mouseY < height * 0.65f) {
+                    mouseY > height * 0.7f && mouseY < height * 0.75f) {
                 vars.out.println("/q");
                 vars.out.flush();
             }
@@ -711,9 +784,28 @@ public class Client extends PApplet {
                 vars.out.flush();
             }
             else if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
+                    mouseY > height * 0.6f && mouseY < height * 0.65f) {
+                vars.out.println("/ld");
+                vars.out.flush();
+                vars.anterior_Scene = "MatchPage";
+                vars.currentScene = "Leaderboard";
+            }
+            else if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
                     mouseY > height * 0.5f && mouseY < height * 0.55f && vars.searching) {
                 vars.out.println("/stop");
                 vars.out.flush();
+            }
+        }
+
+        if (vars.currentScene.equals("Leaderboard")) {
+            // Botão Voltar
+            if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
+                    mouseY > height * 0.85f && mouseY < height * 0.9f) {
+                    if (Objects.equals(vars.anterior_Scene, "MatchPage")) {
+                    vars.currentScene = "MatchPage";
+                } else {
+                        vars.currentScene = "Menu";
+                }
             }
         }
     }
