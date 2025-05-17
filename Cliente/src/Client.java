@@ -383,6 +383,9 @@ public class Client extends PApplet {
             case "Leaderboard":
                 drawLeaderboard();
                 break;
+            case "DeleteAccount":
+                drawDeleteAccount();
+                break;
             default:
                 drawMenu();
                 break;
@@ -410,6 +413,11 @@ public class Client extends PApplet {
         rect(width * 0.4f, height * 0.65f, width * 0.2f, height * 0.05f, 10);
         fill(0);
         text("Leaderboard", width * 0.5f, height * 0.675f);
+
+        fill(200, 100, 100);
+        rect(width * 0.4f, height * 0.75f, width * 0.2f, height * 0.05f, 10);
+        fill(0);
+        text("Eliminar Conta", width * 0.5f, height * 0.775f);
     }
 
     private void drawLogin() {
@@ -449,6 +457,51 @@ public class Client extends PApplet {
         rect(width * 0.4f, height * 0.6f, width * 0.2f, height * 0.05f, 10);
         fill(0);
         text("Login", width * 0.5f, height * 0.625f);
+
+        // Back button
+        fill(200, 100, 100);
+        rect(width * 0.4f, height * 0.7f, width * 0.2f, height * 0.05f, 10);
+        fill(0);
+        text("Voltar", width * 0.5f, height * 0.725f);
+    }
+
+    private void drawDeleteAccount() {
+        fill(255);
+        textSize(32);
+        text("Eliminar conta", width * 0.5f, height * 0.3f);
+        textSize(16);
+
+        // Username box
+        fill(vars.typingUsername ? 200 : 150);
+        rect(width * 0.35f, height * 0.4f, width * 0.3f, height * 0.05f, 10);
+        fill(0);
+        if (vars.username.isEmpty()) {
+            fill(100); // Darker faded-out color
+            textAlign(CENTER, CENTER);
+            text("Enter username", width * 0.5f, height * 0.425f);
+        } else {
+            fill(0);
+            text(vars.username, width * 0.5f, height * 0.425f);
+        }
+
+        // Password box
+        fill(vars.typingPassword ? 200 : 150);
+        rect(width * 0.35f, height * 0.5f, width * 0.3f, height * 0.05f, 10);
+        fill(0);
+        if (vars.password.isEmpty()) {
+            fill(100); // Darker faded-out color
+            textAlign(CENTER, CENTER);
+            text("Enter password", width * 0.5f, height * 0.525f);
+        } else {
+            fill(0);
+            text("*".repeat(vars.password.length()), width * 0.5f, height * 0.525f);
+        }
+
+        // Login button
+        fill(100, 200, 100);
+        rect(width * 0.4f, height * 0.6f, width * 0.2f, height * 0.05f, 10);
+        fill(0);
+        text("Eliminar conta", width * 0.5f, height * 0.625f);
 
         // Back button
         fill(200, 100, 100);
@@ -529,6 +582,8 @@ public class Client extends PApplet {
         rect(width * 0.4f, height * 0.6f, width * 0.2f, height * 0.05f, 10);
         fill(0);
         text("Leaderboard", width * 0.5f, height * 0.625f);
+
+        //Botao delete conta
     }
 
     private void drawGamePage() {
@@ -694,6 +749,14 @@ public class Client extends PApplet {
                 vars.out.println("/ld");
                 vars.out.flush();
             }
+            //Check "Delete Account" button
+            else if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
+                    mouseY > height * 0.75f && mouseY < height * 0.8f) {
+                vars.currentScene = "DeleteAccount";
+                vars.typingUsername = false;
+                vars.typingPassword = false;
+                vars.ignoreFirstClick = true;
+            }
         }
 
         if (vars.currentScene.equals("Login")) {
@@ -808,10 +871,43 @@ public class Client extends PApplet {
                 }
             }
         }
+        if (vars.currentScene.equals("DeleteAccount")){
+            if (vars.ignoreFirstClick) {
+                vars.ignoreFirstClick = false;
+                return;
+            }
+            vars.typingUsername = false;
+            vars.typingPassword = false;
+            // "Back" button
+            if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
+                    mouseY > height * 0.7f && mouseY < height * 0.75f) {
+                vars.currentScene = "Menu";
+                vars.username = "";
+                vars.password = "";
+            }
+            // "Delete Account" button
+            else if (mouseX > width * 0.4f && mouseX < width * 0.6f &&
+                    mouseY > height * 0.6f && mouseY < height * 0.65f) {
+                if (!vars.username.isEmpty() && !vars.password.isEmpty()) {
+                    vars.out.println("/cl " + vars.username + " " + vars.password);
+                    vars.out.flush();
+                }
+            }
+            // Username box
+            else if (mouseX > width * 0.35f && mouseX < width * 0.65f &&
+                    mouseY > height * 0.4f && mouseY < height * 0.45f) {
+                vars.typingUsername = true;
+            }
+            // Password box
+            else if (mouseX > width * 0.35f && mouseX < width * 0.65f &&
+                    mouseY > height * 0.5f && mouseY < height * 0.55f) {
+                vars.typingPassword = true;
+            }
+        }
     }
 
     public void keyPressed() {
-        if (vars.currentScene.equals("Login") || vars.currentScene.equals("CreateAccount")) {
+        if (vars.currentScene.equals("Login") || vars.currentScene.equals("CreateAccount") || vars.currentScene.equals("DeleteAccount")) {
             if (vars.typingUsername) {
                 if (key == BACKSPACE && !vars.username.isEmpty()) {
                     vars.username = vars.username.substring(0, vars.username.length() - 1);
