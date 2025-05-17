@@ -41,13 +41,16 @@ loop(Map, Logged_In) ->
           loop(NewMap, Logged_In)
       end;
 
-    {Pid, {close_account, U}} ->
+    {Pid, {close_account, U, Pass}} ->
       case maps:find(U, Map) of
-        {ok, _} ->
+        {ok, {Pass, _Lv, _Streak}} ->
           NewMap = maps:remove(U, Map),
           Pid ! ok,
           save_state(NewMap),
           loop(NewMap, Logged_In);
+        {ok, _} ->
+          Pid ! wrong_password,
+          loop(Map, Logged_In);
         error ->
           Pid ! user_not_found,
           loop(Map, Logged_In)

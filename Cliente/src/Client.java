@@ -484,7 +484,6 @@ public class Client extends PApplet {
             text(vars.username, width * 0.5f, height * 0.425f);
         }
 
-        // Password box
         fill(vars.typingPassword ? 200 : 150);
         rect(width * 0.35f, height * 0.5f, width * 0.3f, height * 0.05f, 10);
         fill(0);
@@ -497,7 +496,6 @@ public class Client extends PApplet {
             text("*".repeat(vars.password.length()), width * 0.5f, height * 0.525f);
         }
 
-        // Login button
         fill(100, 200, 100);
         rect(width * 0.4f, height * 0.6f, width * 0.2f, height * 0.05f, 10);
         fill(0);
