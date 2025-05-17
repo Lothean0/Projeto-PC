@@ -44,6 +44,10 @@ loop(Players, StartTime,Spawn,LClock,Modifiers,CD_SP) ->
     {User2, Lv2, SPid2, {P2, V2, A2, Pj2, Pt2}}] = Players,
 
   receive
+    end_match ->
+      SPid1 ! end_match,
+      SPid2 ! end_match,
+      exit(normal);
     {move, User, Key, Pid} ->
       case {User, Pid} of
         {User1, SPid1} ->
@@ -92,7 +96,7 @@ loop(Players, StartTime,Spawn,LClock,Modifiers,CD_SP) ->
           NewModifiers=generate_random_modifier(Modifiers,MaxMod,{MinPx, MinPy},{MaxPx, MaxPy}),
           {TempPt2,{TempP1,TempP2,TempV1,TempV2,TempA1,TempA2,Temp1Pj1},NewModifiers2} = update(P1,P2, V1, V2, A1, A2, Pt2, MaxVel,{MinPx, MinPy},{ MaxPx, MaxPy}, Spawn1,Spawn2, Pj1,NewModifiers),
           {TempPt1,{NewP2,NewP1,NewV2,NewV1,NewA2,NewA1,Temp1Pj2},NewModifiers3} = update(TempP2,TempP1, TempV2,TempV1, TempA2,TempA1, Pt1, MaxVel,{MinPx, MinPy},{ MaxPx, MaxPy}, Spawn2,Spawn1, Pj2,NewModifiers2),
-          io:format("NewModifiers: ~p~n", [NewModifiers3]),
+          %%io:format("NewModifiers: ~p~n", [NewModifiers3]),
           TempPj1 = update_projectiles(Temp1Pj1),
           TempPj2 = update_projectiles(Temp1Pj2),
           %% Check for projectiles collisions
@@ -231,7 +235,7 @@ check_CDMods_collisions(Acumul, [CDMod | Rest], P, CD) ->
   case Distance < 25 of
     true ->
       %% Collision detected: apply modifier and remove it from the list
-      io:format("Collision detected: ~p~n", [CDMod]),
+      %%io:format("Collision detected: ~p~n", [CDMod]),
       NewCD = max(CD + Value, 0),
       check_CDMods_collisions(Acumul, Rest, P, NewCD);
     false ->
@@ -248,7 +252,7 @@ check_SPMods_collisions(Acumul, [SPMod | Rest], P, SP) ->
   case Distance < 25 of
     true ->
       %% Collision detected: apply modifier and remove it from the list
-      io:format("Collision detected: ~p~n", [SPMod]),
+      %%io:format("Collision detected: ~p~n", [SPMod]),
       NewSP = max(SP + Value, 0),
       check_SPMods_collisions(Acumul, Rest, P, NewSP);
     false ->

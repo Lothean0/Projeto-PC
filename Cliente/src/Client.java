@@ -117,7 +117,8 @@ public class Client extends PApplet {
                                     vars.searching = false;
                                     vars.currentScene = "GamePage";
                                     break;
-                                case "You win!", "You lose!", "Draw!":
+                                case "You win!", "You lose!", "Draw!","Match ended.":
+                                    System.out.println("Here!");
                                     vars.out.println("/Lv");
                                     vars.out.flush();
                                     Element newRoot3 = receiveMessage();

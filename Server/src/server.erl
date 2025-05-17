@@ -170,7 +170,11 @@ match(MatchPid, Sock, User) ->
   receive
     {tcp_closed, Sock} ->
       loginManager:logout(User),
+      MatchPid ! end_match,
       gen_tcp:close(Sock);
+    end_match ->
+      send_message(Sock, {reply,"Match ended."}),
+      user_logged_in(Sock, User);
     {tcp, Sock, Data} ->
       %%io:format("Received data: ~p~n", [Data]),
       CleanData = string:trim(Data), %% Trim the input
