@@ -600,20 +600,20 @@ public class Client extends PApplet {
         scale(scaleFactorX, scaleFactorY);  // Scale the coordinate system
 
         // Draw Player 1
-        fill(0, 0, 255);
+        fill(0, 180, 220);
         ellipse(vars.px1, vars.py1, 50, 50);
 
         // Draw Player 2
-        fill(255, 0, 0);
+        fill(200, 30, 60);
         ellipse(vars.px2, vars.py2, 50, 50);
 
         for (float[] projectile : vars.projectiles1) {
-            fill(0, 255, 0);
+            fill(170, 255, 50);
             ellipse(projectile[0], projectile[1], 10, 10);
         }
 
         for (float[] projectile : vars.projectiles2) {
-            fill(255, 255, 0);
+            fill(255, 60, 180);
             ellipse(projectile[0], projectile[1], 10, 10);
         }
 
