@@ -31,7 +31,7 @@ public class Client extends PApplet {
             response = response.replace("\\\"", "\"");
             response = response.replaceFirst("\"", "");
             response = response.replaceFirst("\"$", "");
-            System.out.println(response);
+            //System.out.println(response);
             InputStream inputStream = new ByteArrayInputStream(response.getBytes());
 
             // Parse the XML
@@ -118,7 +118,6 @@ public class Client extends PApplet {
                                     vars.currentScene = "GamePage";
                                     break;
                                 case "You win!", "You lose!", "Draw!","Match ended.":
-                                    System.out.println("Here!");
                                     vars.out.println("/Lv");
                                     vars.out.flush();
                                     Element newRoot3 = receiveMessage();
@@ -218,8 +217,6 @@ public class Client extends PApplet {
                             Element Clock1 = (Element) Clock.item(0);
                             String time = Clock1.getAttribute("time");
                             //System.out.println("Clock: " + time);
-
-                            System.out.println("Clock: " + time);
                             vars.time = Integer.parseInt(time);
 
                             NodeList modifiers = root.getElementsByTagName("modifier");
@@ -906,6 +903,8 @@ public class Client extends PApplet {
     }
 
     public void keyPressed() {
+        scaleFactorX = (float) width / baseWidth;
+        scaleFactorY = (float) height / baseHeight;
         if (vars.currentScene.equals("Login") || vars.currentScene.equals("CreateAccount") || vars.currentScene.equals("DeleteAccount")) {
             if (vars.typingUsername) {
                 if (key == BACKSPACE && !vars.username.isEmpty()) {
@@ -934,7 +933,8 @@ public class Client extends PApplet {
                 vars.out.println("/m space");
                 vars.out.flush();
             } else if (key == 'q') {
-                vars.out.println("/s " + mouseX * (width/baseWidth) + " " + mouseY * (height/baseHeight));
+                System.out.println("mouseX: " + mouseX * scaleFactorX+ ", mouseY: " + mouseY * scaleFactorY);
+                vars.out.println("/s " + (int)(mouseX / scaleFactorX) + " " + (int)(mouseY / scaleFactorY));
                 vars.out.flush();
             } else {
                 vars.out.println("/m " + Character.toLowerCase(key));
