@@ -265,8 +265,8 @@ check_SPMods_collisions(Acumul, [], _P, SP) ->
 %% Update the cooldown and speed of projectiles for each tick
 update_cd_sp({Speed, Cooldown, LastShootTime, Projectiles}, {CD, SP}) ->
   %% Change this Values to better ones latter
-  SpeedAdjustmentRate = 0.001,
-  CooldownAdjustmentRate = 0.1,
+  SpeedAdjustmentRate = 0.004,       %% ~4s decay for a 1.5 boost
+  CooldownAdjustmentRate = 0.25,     %% ~4s decay for a 250 bonus
 
   %% Gradually adjust Speed towards SP
   NewSpeed =
@@ -291,8 +291,8 @@ generate_random_modifier(Modifiers, MaxMod, MinP, MaxP) ->
   {MinPx, MinPy} = MinP,
   {MaxPx, MaxPy} = MaxP,
   %% Change this Values to better ones latter
-  CDChange = 100,
-  SPChange = 2.5,
+  CDChange = 250.0,
+  SPChange = 1.5,
   case rand:uniform(1000) =< 2 of
     true ->
       %% Generate a random modifier
