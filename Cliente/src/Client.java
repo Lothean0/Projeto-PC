@@ -302,7 +302,6 @@ public class Client extends PApplet {
             this.SPMods = new CopyOnWriteArrayList<>();
             this.leaderboard = new CopyOnWriteArrayList<>();
             try {
-                //String ip = "188.37.73.48";
                 String ip = "localhost";
                 this.socket = new Socket(ip, Port);
                 this.in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
